@@ -12,7 +12,7 @@ Every job application is a heist. The ATS (Applicant Tracking System) is the vau
 
 **jobheist** cases the joint for you - analyzing how well your resume matches the job posting, identifying what keywords you're missing, and scoring your chances of making it past the automated guards.
 
-Built with [Firecrawl](https://firecrawl.com) for lightning-fast job scraping and OpenAI's latest reasoning models for intelligent analysis. The entire codebase is just 2 files (~500 lines) because the best heists are simple.
+Built with [Firecrawl](https://firecrawl.com) for lightning-fast job scraping and OpenAI's latest reasoning models for intelligent analysis. The entire codebase is just 2 files (~850 lines) because the best heists are simple.
 
 ## Quick Start
 
@@ -39,7 +39,10 @@ jobheist resume.pdf https://example.com/job --format=xml
 jobheist resume.pdf https://example.com/job --fresh
 
 # Advanced analysis options
-jobheist resume.pdf https://example.com/job --model=gpt-5 --verbosity=high --reasoning=detailed
+jobheist resume.pdf https://example.com/job --model=gpt-5 --verbosity=high
+
+# Show AI reasoning process (hidden by default)
+jobheist resume.pdf https://example.com/job --reasoning=auto
 
 # Bring your own tools (API keys)
 jobheist resume.pdf https://example.com/job \
@@ -132,7 +135,7 @@ pnpm jobheist resume.pdf https://example.com/job
 
 ## Philosophy
 
-- **Simple is better**: 2 files, ~500 lines, no magic
+- **Simple is better**: 2 files, ~850 lines, no magic
 - **Fast by default**: Streaming output, smart caching
 - **Honest scoring**: Real feedback to improve your chances
 - **Unix-style**: Does one thing well - analyzes job fit

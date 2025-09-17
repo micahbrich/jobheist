@@ -15,8 +15,9 @@ import args from 'args'
 // Load global config if it exists (~/.jobheistrc)
 config({ path: join(homedir(), '.jobheistrc') })
 
+
 // Simple output utilities
-const write = (text: string) => process.stdout.write(text)
+const write = (text: string) => process.stdout.write(text as string)
 const status = (text: string) => process.stderr.write(`\r\x1b[K${text}`)
 const done = () => process.stderr.write('\n')
 
@@ -26,7 +27,7 @@ args
   .option('fresh', 'Skip cache and fetch fresh data', false)
   .option('model', 'OpenAI model string', 'gpt-5-mini')
   .option('verbosity', 'Response verbosity', 'low')
-  .option('reasoning', 'Reasoning output', 'auto')
+  .option('reasoning', 'Reasoning output', 'none')
   .option('firecrawl-key', 'Firecrawl API key')
   .option('openai-key', 'OpenAI API key')
   .example('jobheist resume.pdf https://jobs.example.com/posting', 'Basic usage')
@@ -66,14 +67,43 @@ async function main() {
     scraping: '🔍',
     scraped: '✓',
     analyzing: '🤖',
+    analyzed: '✓',
     reasoning: '💭',
     generating: '✍️',
     scoring: '📊',
     complete: '✅'
   }
 
+  // Phase tracking
+  const phases = ['parsed', 'scraped', 'analyzed']
+  const completed = new Set<string>()
   let score = 0
   let isStreaming = false
+
+  // Build accumulated status string
+  const buildStatus = (current: string) => {
+    const parts: string[] = []
+
+    // Add completed phases
+    for (const p of phases) {
+      if (completed.has(p)) {
+        parts.push(`✓ ${p}`)
+      }
+    }
+
+    // Add current phase
+    if (!['complete', 'generating', 'reasoning'].includes(current)) {
+      const icon = icons[current] || '⚡'
+      parts.push(`${icon} ${current}...`)
+    }
+
+    // Add score if available
+    if (score) {
+      parts.push(`${score}/100`)
+    }
+
+    return parts.join(' | ')
+  }
 
   try {
     const result = await atsStream(resume, job, {
@@ -82,7 +112,7 @@ async function main() {
       config: {
         model: parsed.model,
         verbosity: parsed.verbosity as 'low' | 'medium' | 'high',
-        reasoning: parsed.reasoning as 'auto' | 'detailed'
+        reasoning: parsed.reasoning as 'none' | 'auto' | 'detailed'
       },
       onProgress: ({ phase, data }) => {
         // Update score if available
@@ -90,18 +120,32 @@ async function main() {
           score = data.score
         }
 
-        // Stream text content directly
-        if ((phase === 'reasoning' || phase === 'generating') && data && 'text' in data) {
-          if (!isStreaming) {
-            done() // Clear status line before streaming
-            isStreaming = true
+        // Mark phases as complete
+        if (phase === 'parsed') completed.add('parsed')
+        if (phase === 'scraped') completed.add('scraped')
+        if (phase === 'analyzing') completed.delete('analyzed') // Remove if re-analyzing
+        if (phase === 'reasoning' || phase === 'generating' || phase === 'scoring') {
+          completed.add('analyzed')
+        }
+
+        // Stream text content with formatting
+        if (data && 'text' in data) {
+          if (phase === 'reasoning') {
+            if (!isStreaming) {
+              done() // Clear status line before streaming
+              isStreaming = true
+            }
+            write(data.text)
+          } else if (phase === 'generating') {
+            if (!isStreaming) {
+              done() // Clear status line before streaming
+              isStreaming = true
+            }
+            write(data.text)
           }
-          write(data.text)
-        } else {
-          // Show status updates
-          const icon = icons[phase] || '⚡'
-          const scoreText = score ? ` | ${score}/100` : ''
-          status(`${icon} ${phase}${scoreText}`)
+        } else if (phase !== 'complete') {
+          // Show accumulated status updates
+          status(buildStatus(phase))
           isStreaming = false
         }
 
@@ -112,8 +156,8 @@ async function main() {
       }
     })
 
-    // Output result if not already streamed
-    if (parsed.format !== 'markdown' || !result) {
+    // Output result only for non-markdown formats (markdown was already streamed)
+    if (parsed.format !== 'markdown') {
       console.log(result)
     }
   } catch (error) {

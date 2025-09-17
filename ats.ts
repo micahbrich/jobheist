@@ -4,7 +4,7 @@
  */
 
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { streamObject, generateObject, streamText } from 'ai'
+import { streamObject, generateObject, streamText, smoothStream } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import FirecrawlApp from '@mendable/firecrawl-js'
 import { z } from 'zod'
@@ -42,13 +42,13 @@ type Job = z.infer<typeof JobSchema> & {
 interface Config {
   model?: string
   verbosity?: 'low' | 'medium' | 'high'
-  reasoning?: 'auto' | 'detailed'
+  reasoning?: 'none' | 'auto' | 'detailed'
 }
 
 const defaults: Required<Config> = {
   model: 'gpt-5-mini',
   verbosity: 'low',
-  reasoning: 'auto'
+  reasoning: 'none'
 }
 
 interface Score {
@@ -268,6 +268,12 @@ IMPORTANT: Do NOT include the full resume text in your response. Only reference 
 
 Your entire job is to give this advice. You don't need to offer to do anything else.
 
+ABSOLUTE RULES ABOUT SCOPE:
+- Do NOT include any offers, calls-to-action, or suggestions to perform additional tasks.
+- Do NOT write phrases like "If you want, I can...", "I can also...", "Let me know if you want me to...", or any variant.
+- Do NOT propose generating extra content (summaries, skills lines, cover letters, emails, bullet points) beyond the analysis itself.
+- End the response immediately after the final assessment without inviting further work.
+
 MARKDOWN FORMATTING REQUIREMENTS:
 - Use proper heading hierarchy (# for main title, ## for sections, ### for subsections)
 - Use **bold** for important keywords and scores
@@ -277,6 +283,9 @@ MARKDOWN FORMATTING REQUIREMENTS:
 - Use --- for section separators if needed
 - Keep paragraphs concise - prefer short paragraphs over walls of text
 - Use tables with | pipes | for | comparisons when appropriate
+
+END OF RESPONSE CONSTRAINT:
+- Conclude after the Compatibility Assessment section. Do not add closing lines, offers, next steps, or any further assistance.
 `
 }
 
@@ -523,7 +532,7 @@ export async function ats(
       abortSignal: options.abortSignal,
       providerOptions: {
         openai: {
-          reasoningSummary: config.reasoning,
+          reasoningSummary: config.reasoning === 'none' ? 'auto' : config.reasoning,
           textVerbosity: config.verbosity
         },
       },
@@ -579,9 +588,10 @@ export async function atsStream(
       model: openai(config.model),
       prompt: reason(resume.text, job),
       abortSignal: options.abortSignal,
+      experimental_transform: smoothStream({ chunking: 'line' }),
       providerOptions: {
         openai: {
-          reasoningSummary: config.reasoning,
+          reasoningSummary: config.reasoning === 'none' ? 'auto' : config.reasoning,
           textVerbosity: config.verbosity
         },
       },
@@ -594,7 +604,7 @@ export async function atsStream(
       // Process both streams properly
       const processStream = async () => {
         for await (const part of fullStream) {
-          if (part.type === 'reasoning-delta') {
+          if (part.type === 'reasoning-delta' && config.reasoning !== 'none') {
             options.onProgress!({ phase: 'reasoning', data: { text: part.text } })
           } else if (part.type === 'text-delta') {
             options.onProgress!({ phase: 'generating', data: { text: part.text } })
