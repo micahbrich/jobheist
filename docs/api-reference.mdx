@@ -1,0 +1,265 @@
+---
+title: API Reference
+description: Complete API reference for jobheist functions and types
+---
+
+# API Reference
+
+## Functions
+
+### `ats(resumePath, jobUrl, options?)`
+
+Simple one-shot ATS analysis.
+
+```typescript
+function ats(
+  resumePath: string,
+  jobUrl: string,
+  options?: {
+    firecrawlKey?: string
+    format?: 'json' | 'xml' | 'markdown'
+    fresh?: boolean
+  }
+): Promise<string>
+```
+
+**Parameters:**
+- `resumePath` - Path to PDF resume file
+- `jobUrl` - URL of job posting to analyze
+- `options` - Optional configuration
+
+**Returns:** Promise resolving to analysis result as string
+
+**Example:**
+```typescript
+import { ats } from 'jobheist'
+
+const result = await ats('resume.pdf', 'https://example.com/job', {
+  format: 'json',
+  fresh: true
+})
+```
+
+### `atsStream(resumePath, jobUrl, options?)`
+
+Streaming ATS analysis with progress callbacks.
+
+```typescript
+function atsStream(
+  resumePath: string,
+  jobUrl: string,
+  options?: {
+    firecrawlKey?: string
+    format?: 'json' | 'xml' | 'markdown'
+    fresh?: boolean
+    onProgress?: (progress: ProgressUpdate) => void
+  }
+): Promise<string>
+```
+
+**Parameters:**
+- `resumePath` - Path to PDF resume file
+- `jobUrl` - URL of job posting to analyze
+- `options` - Optional configuration including progress callback
+
+**Returns:** Promise resolving to analysis result as string
+
+**Example:**
+```typescript
+import { atsStream } from 'jobheist'
+
+const result = await atsStream('resume.pdf', 'https://example.com/job', {
+  format: 'markdown',
+  onProgress: (progress) => {
+    console.log(`Phase: ${progress.phase}`)
+  }
+})
+```
+
+## Types
+
+### `ProgressUpdate`
+
+```typescript
+interface ProgressUpdate {
+  phase: ProgressPhase
+  data?: ProgressData
+}
+```
+
+### `ProgressPhase`
+
+```typescript
+type ProgressPhase = 
+  | 'parsing' 
+  | 'parsed' 
+  | 'scraping' 
+  | 'scraped' 
+  | 'analyzing' 
+  | 'reasoning' 
+  | 'generating' 
+  | 'scoring' 
+  | 'complete'
+```
+
+### `ProgressData`
+
+```typescript
+type ProgressData = 
+  | ParsedData 
+  | ScrapedData 
+  | TextData 
+  | ScoringData 
+  | Score 
+  | undefined
+```
+
+### `ParsedData`
+
+```typescript
+interface ParsedData {
+  name?: string
+  email?: string
+}
+```
+
+### `ScrapedData`
+
+```typescript
+interface ScrapedData {
+  title: string
+  company: string
+}
+```
+
+### `TextData`
+
+```typescript
+interface TextData {
+  text: string
+}
+```
+
+### `ScoringData`
+
+```typescript
+interface ScoringData {
+  score?: number
+  keywordAnalysis?: Partial<Score['keywordAnalysis']>
+  suggestions?: Partial<Score['suggestions']>
+  analysis?: Partial<Score['analysis']>
+  optimizations?: string[]
+}
+```
+
+### `Score`
+
+```typescript
+interface Score {
+  score: number
+  keywordAnalysis: {
+    strongMatches: Array<{
+      keyword: string
+      jobFrequency: number
+      resumeFrequency: number
+    }>
+    underRepresented: Array<{
+      keyword: string
+      jobFrequency: number
+      resumeFrequency: number
+      suggestion: string
+    }>
+    notFound: Array<{
+      keyword: string
+      jobFrequency: number
+      impact: number
+      suggestion: string
+    }>
+  }
+  suggestions: Array<{
+    type: 'add' | 'enhance' | 'rewrite'
+    location: string
+    current?: string
+    suggested: string
+    impact: number
+    rationale: string
+  }>
+  analysis: {
+    topPriorities: string[]
+    currentStrengths: string[]
+    opportunities: string[]
+    compatibility: { current: number; potential: number }
+  }
+  optimizations: string[]
+}
+```
+
+### `Resume`
+
+```typescript
+interface Resume {
+  text: string
+  name?: string
+  email?: string
+  phone?: string
+}
+```
+
+### `Job`
+
+```typescript
+interface Job {
+  title: string
+  company: string
+  requiredSkills: string[]
+  mustHaveRequirements: string[]
+  niceToHave: string[]
+  experienceYears?: number
+  keyResponsibilities: string[]
+  technologies: string[]
+  keywords: string[]
+  text: string
+  url: string
+}
+```
+
+## Options
+
+### `format`
+
+Output format for analysis results.
+
+- `'markdown'` (default) - Human-readable analysis
+- `'json'` - Structured JSON data
+- `'xml'` - XML format
+
+### `fresh`
+
+Skip cache and fetch fresh job data.
+
+- `false` (default) - Use cached data when available
+- `true` - Always fetch fresh data
+
+### `firecrawlKey`
+
+Firecrawl API key for job scraping.
+
+- Can be provided via options, environment variable, or config file
+- Required for all operations
+
+### `openaiKey`
+
+OpenAI API key for AI analysis.
+
+- Can be provided via options, environment variable, or config file
+- Required for all operations
+
+### `onProgress`
+
+Progress callback function for streaming updates.
+
+```typescript
+onProgress?: (progress: ProgressUpdate) => void
+```
+
+Called with progress updates during analysis. See [Progress Phases](./progress-phases.mdx) for details.

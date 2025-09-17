@@ -99,6 +99,58 @@ await atsStream('resume.pdf', 'https://example.com/job', {
 })
 ```
 
+## Progress Tracking
+
+The `atsStream` function provides real-time progress updates through the `onProgress` callback. Track the analysis phases as they happen:
+
+```typescript
+await atsStream('resume.pdf', 'https://job-url', {
+  onProgress: (progress) => {
+    switch (progress.phase) {
+      case 'parsing':
+        console.log('⏳ Parsing resume...')
+        break
+      case 'parsed':
+        console.log(`✅ Parsed: ${progress.data?.name}`)
+        break
+      case 'scraping':
+        console.log('⏳ Fetching job posting...')
+        break
+      case 'scraped':
+        console.log(`✅ Job: ${progress.data?.title} at ${progress.data?.company}`)
+        break
+      case 'analyzing':
+        console.log('⏳ Analyzing compatibility...')
+        break
+      case 'reasoning':
+        // Stream AI reasoning (markdown only)
+        process.stderr.write(progress.data?.text || '')
+        break
+      case 'generating':
+        // Stream final report (markdown only)
+        process.stdout.write(progress.data?.text || '')
+        break
+      case 'scoring':
+        // Stream partial scores (JSON/XML only)
+        if (progress.data?.score) {
+          console.log(`Current score: ${progress.data.score}/100`)
+        }
+        break
+      case 'complete':
+        console.log('✅ Analysis complete!')
+        break
+    }
+  }
+})
+```
+
+### Available Phases
+
+- **`parsing`** → **`parsed`** → **`scraping`** → **`scraped`** → **`analyzing`** → **`reasoning`** → **`generating`** → **`complete`** (Markdown)
+- **`parsing`** → **`parsed`** → **`scraping`** → **`scraped`** → **`scoring`** → **`complete`** (JSON/XML)
+
+Each phase includes relevant data (contact info, job details, streaming text, or partial scores). See the complete [Progress Phases Documentation](./docs/progress-phases.mdx) for full details and TypeScript types.
+
 ## Output Formats
 
 - **Markdown** (default): Human-readable analysis with scores and suggestions
@@ -311,6 +363,11 @@ These 4 changes will address the typical token checks used in ATS boolean rules 
 
 > ATS systems are literal and prize exact tokens and numeric patterns. You already have most of the substantive experience Vercel wants — add a few exact phrases and tokens (not new claims, just explicit wording) and your resume will clear both ATS filters and recruiter screens.
 ```
+
+## Documentation
+
+- [Complete API Documentation](./docs/) - Full reference and guides
+- [Progress Phases](./docs/progress-phases.mdx) - Detailed onProgress callback documentation
 
 ## Development
 

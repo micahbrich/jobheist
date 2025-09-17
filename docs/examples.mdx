@@ -1,0 +1,313 @@
+---
+title: Examples
+description: Real-world usage examples and patterns for jobheist
+---
+
+# Examples
+
+## Basic Usage
+
+### Simple Analysis
+```typescript
+import { ats } from 'jobheist'
+
+const result = await ats('resume.pdf', 'https://example.com/job')
+console.log(result)
+```
+
+### Different Output Formats
+```typescript
+import { ats } from 'jobheist'
+
+// Markdown (default)
+const markdown = await ats('resume.pdf', 'https://example.com/job')
+
+// JSON for automation
+const json = await ats('resume.pdf', 'https://example.com/job', {
+  format: 'json'
+})
+
+// XML for enterprise systems
+const xml = await ats('resume.pdf', 'https://example.com/job', {
+  format: 'xml'
+})
+```
+
+## Progress Tracking
+
+### Basic Progress Updates
+```typescript
+import { atsStream } from 'jobheist'
+
+await atsStream('resume.pdf', 'https://job-url', {
+  onProgress: (progress) => {
+    console.log(`Phase: ${progress.phase}`)
+  }
+})
+```
+
+### CLI-Style Progress
+```typescript
+import { atsStream } from 'jobheist'
+
+const phases = {
+  parsing: '⏳ Parsing resume...',
+  scraping: '⏳ Fetching job posting...',
+  analyzing: '⏳ Analyzing compatibility...',
+  complete: '✅ Analysis complete!'
+}
+
+await atsStream('resume.pdf', 'https://job-url', {
+  onProgress: (progress) => {
+    if (phases[progress.phase]) {
+      console.error(phases[progress.phase])
+    }
+  }
+})
+```
+
+### Real-time Text Streaming
+```typescript
+import { atsStream } from 'jobheist'
+
+await atsStream('resume.pdf', 'https://job-url', {
+  format: 'markdown',
+  onProgress: (progress) => {
+    if (progress.phase === 'reasoning') {
+      process.stderr.write(progress.data?.text || '')
+    }
+    if (progress.phase === 'generating') {
+      process.stdout.write(progress.data?.text || '')
+    }
+  }
+})
+```
+
+## Advanced Patterns
+
+### Batch Processing
+```typescript
+import { ats } from 'jobheist'
+
+const jobs = [
+  'https://company1.com/job1',
+  'https://company2.com/job2',
+  'https://company3.com/job3'
+]
+
+const results = await Promise.all(
+  jobs.map(job => ats('resume.pdf', job, { format: 'json' }))
+)
+
+results.forEach((result, index) => {
+  const data = JSON.parse(result)
+  console.log(`Job ${index + 1}: ${data.score}/100`)
+})
+```
+
+### Error Handling
+```typescript
+import { ats } from 'jobheist'
+
+try {
+  const result = await ats('resume.pdf', 'https://job-url')
+  console.log(result)
+} catch (error) {
+  if (error.message.includes('FIRECRAWL_API_KEY')) {
+    console.error('Please set your Firecrawl API key')
+  } else if (error.message.includes('Failed to parse PDF')) {
+    console.error('PDF parsing failed - check file format')
+  } else {
+    console.error('Analysis failed:', error.message)
+  }
+}
+```
+
+### Custom Progress UI
+```typescript
+import { atsStream } from 'jobheist'
+
+class ProgressUI {
+  private currentPhase = ''
+  
+  async analyze(resume: string, jobUrl: string) {
+    return await atsStream(resume, jobUrl, {
+      onProgress: (progress) => {
+        this.updateUI(progress)
+      }
+    })
+  }
+  
+  private updateUI(progress: any) {
+    if (progress.phase !== this.currentPhase) {
+      this.currentPhase = progress.phase
+      this.showPhase(progress.phase)
+    }
+    
+    if (progress.data?.text) {
+      this.streamText(progress.data.text)
+    }
+  }
+  
+  private showPhase(phase: string) {
+    // Update your UI here
+    console.log(`Phase: ${phase}`)
+  }
+  
+  private streamText(text: string) {
+    // Stream text to your UI
+    process.stdout.write(text)
+  }
+}
+
+const ui = new ProgressUI()
+await ui.analyze('resume.pdf', 'https://job-url')
+```
+
+## CLI Examples
+
+### Basic Analysis
+```bash
+# Simple analysis
+jobheist resume.pdf https://example.com/job
+
+# JSON output
+jobheist resume.pdf https://example.com/job --format=json
+
+# Fresh data (skip cache)
+jobheist resume.pdf https://example.com/job --fresh
+```
+
+### With API Keys
+```bash
+# Using command line flags
+jobheist resume.pdf https://job-url \
+  --openai-key=sk-xxx \
+  --firecrawl-key=fc_xxx
+
+# Using environment variables
+export OPENAI_API_KEY=sk-xxx
+export FIRECRAWL_API_KEY=fc_xxx
+jobheist resume.pdf https://job-url
+```
+
+### Global Installation
+```bash
+# Install globally
+npm install -g jobheist
+
+# Use anywhere
+jobheist resume.pdf https://job-url
+
+# Set up global config
+echo "OPENAI_API_KEY=sk-xxx" >> ~/.jobheistrc
+echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheistrc
+chmod 600 ~/.jobheistrc
+```
+
+## Integration Examples
+
+### With Express.js
+```typescript
+import express from 'express'
+import { ats } from 'jobheist'
+
+const app = express()
+
+app.post('/analyze', async (req, res) => {
+  try {
+    const { resumePath, jobUrl } = req.body
+    const result = await ats(resumePath, jobUrl, { format: 'json' })
+    res.json(JSON.parse(result))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+```
+
+### With Next.js API Route
+```typescript
+// pages/api/analyze.ts
+import { ats } from 'jobheist'
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+  
+  try {
+    const { resumePath, jobUrl } = req.body
+    const result = await ats(resumePath, jobUrl)
+    res.json({ result })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+```
+
+### With React Hook
+```typescript
+import { useState, useCallback } from 'react'
+import { atsStream } from 'jobheist'
+
+export function useATS() {
+  const [progress, setProgress] = useState('')
+  const [result, setResult] = useState('')
+  const [loading, setLoading] = useState(false)
+  
+  const analyze = useCallback(async (resumePath: string, jobUrl: string) => {
+    setLoading(true)
+    setProgress('')
+    setResult('')
+    
+    try {
+      const analysis = await atsStream(resumePath, jobUrl, {
+        onProgress: (update) => {
+          setProgress(update.phase)
+        }
+      })
+      setResult(analysis)
+    } catch (error) {
+      console.error('Analysis failed:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+  
+  return { analyze, progress, result, loading }
+}
+```
+
+## Performance Tips
+
+### Memory Management
+```typescript
+// For large files, use streaming
+const result = await atsStream('large-resume.pdf', 'https://job-url', {
+  onProgress: (progress) => {
+    // Handle progress without storing all data
+    if (progress.phase === 'complete') {
+      console.log('Analysis complete!')
+    }
+  }
+})
+```
+
+### Caching Results
+```typescript
+import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { ats } from 'jobheist'
+
+async function analyzeWithCache(resumePath: string, jobUrl: string) {
+  const cacheKey = `${resumePath}-${jobUrl}`.replace(/[^a-zA-Z0-9]/g, '-')
+  const cacheFile = `./cache/${cacheKey}.json`
+  
+  if (existsSync(cacheFile)) {
+    return JSON.parse(readFileSync(cacheFile, 'utf8'))
+  }
+  
+  const result = await ats(resumePath, jobUrl, { format: 'json' })
+  writeFileSync(cacheFile, result)
+  return JSON.parse(result)
+}
+```

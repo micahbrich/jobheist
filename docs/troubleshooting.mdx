@@ -1,0 +1,125 @@
+---
+title: Troubleshooting
+description: Common issues and solutions for jobheist
+---
+
+# Troubleshooting
+
+## Common Issues
+
+### API Key Errors
+
+**Error:** `FIRECRAWL_API_KEY required` or `OPENAI_API_KEY required`
+
+**Solution:** Set your API keys using one of these methods:
+
+1. **Environment variables:**
+   ```bash
+   export OPENAI_API_KEY=sk-xxx
+   export FIRECRAWL_API_KEY=fc_xxx
+   ```
+
+2. **Global config file:**
+   ```bash
+   echo "OPENAI_API_KEY=sk-xxx" >> ~/.jobheistrc
+   echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheistrc
+   chmod 600 ~/.jobheistrc
+   ```
+
+3. **Command line flags:**
+   ```bash
+   jobheist resume.pdf https://job-url \
+     --openai-key=sk-xxx \
+     --firecrawl-key=fc_xxx
+   ```
+
+### PDF Parsing Issues
+
+**Error:** `Failed to parse PDF` or empty resume text
+
+**Solutions:**
+- Ensure the PDF is not password-protected
+- Try converting to a different PDF format
+- Check that the PDF contains selectable text (not just images)
+- Verify the file path is correct and accessible
+
+### Job Scraping Failures
+
+**Error:** `Failed to scrape job posting`
+
+**Solutions:**
+- Verify the job URL is accessible in a browser
+- Try with `--fresh` flag to bypass cache
+- Check if the job posting requires authentication
+- Ensure the URL is a direct link to the job posting, not a search results page
+
+### Network/Timeout Issues
+
+**Error:** Timeout or network errors
+
+**Solutions:**
+- Check your internet connection
+- Try again with `--fresh` flag
+- Verify API keys are valid and have sufficient credits
+- Check if your network blocks the required services
+
+### Memory Issues
+
+**Error:** Out of memory or process crashes
+
+**Solutions:**
+- Ensure you have sufficient RAM (recommended: 2GB+)
+- Try with smaller PDF files
+- Close other memory-intensive applications
+- Consider using the streaming API (`atsStream`) for large files
+
+## Debug Mode
+
+Enable verbose logging by setting the `DEBUG` environment variable:
+
+```bash
+DEBUG=jobheist:* jobheist resume.pdf https://job-url
+```
+
+This will show detailed information about the analysis process.
+
+## Performance Tips
+
+### For Large PDFs
+- Use `atsStream` instead of `ats` for better memory management
+- Consider splitting very large resumes into smaller sections
+
+### For Slow Networks
+- Use the `--fresh` flag sparingly (it bypasses cache)
+- Consider running during off-peak hours
+
+### For Batch Processing
+- Use JSON format for programmatic processing
+- Implement proper error handling and retries
+- Consider rate limiting for API calls
+
+## Getting Help
+
+If you're still having issues:
+
+1. **Check the logs** - Look for specific error messages
+2. **Try the examples** - Test with the provided examples first
+3. **Verify setup** - Ensure all dependencies are installed correctly
+4. **Check API status** - Verify Firecrawl and OpenAI services are operational
+
+## Known Limitations
+
+- **PDF parsing:** Only supports text-based PDFs, not image-only PDFs
+- **Job scraping:** Some job sites may block automated scraping
+- **Rate limits:** API providers may have rate limits
+- **File size:** Very large PDFs may cause memory issues
+
+## Error Codes
+
+| Error | Description | Solution |
+|-------|-------------|----------|
+| `FIRECRAWL_API_KEY required` | Missing Firecrawl API key | Set API key via env var or config |
+| `OPENAI_API_KEY required` | Missing OpenAI API key | Set API key via env var or config |
+| `Failed to parse PDF` | PDF parsing error | Check PDF format and accessibility |
+| `Failed to scrape job posting` | Job scraping error | Verify URL and try with --fresh |
+| `Generation failed` | AI analysis error | Check API keys and try again |

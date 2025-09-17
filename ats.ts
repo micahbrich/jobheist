@@ -38,6 +38,19 @@ type Job = z.infer<typeof JobSchema> & {
   url: string
 }
 
+// Configuration options with smart defaults
+interface Config {
+  model?: string
+  verbosity?: 'low' | 'medium' | 'high'
+  reasoning?: 'auto' | 'detailed'
+}
+
+const defaults: Required<Config> = {
+  model: 'gpt-5-mini',
+  verbosity: 'low',
+  reasoning: 'auto'
+}
+
 interface Score {
   score: number
   keywordAnalysis: {
@@ -197,7 +210,7 @@ async function scrape(url: string, apiKey: string, options?: { fresh?: boolean }
 }
 
 // Build job context - single source of truth
-const buildJobContext = (job: Job) => `Position: ${job.title} at ${job.company}
+const context = (job: Job) => `Position: ${job.title} at ${job.company}
 Required Skills: ${job.requiredSkills.join(', ')}
 Technologies: ${job.technologies.join(', ')}
 Must-Have: ${job.mustHaveRequirements.join(', ')}
@@ -206,7 +219,7 @@ Full Job Posting:
 ${job.text}`
 
 // Build deep ATS reasoning prompt for markdown output
-function buildATSReasoningPrompt(resume: string, job: Job): string {
+function reason(resume: string, job: Job): string {
   return `You are an ATS (Applicant Tracking System) expert analyzing resume-job compatibility.
 
 THINK DEEPLY about how real ATS systems work. Consider:
@@ -228,7 +241,7 @@ THINK DEEPLY about how real ATS systems work. Consider:
    - In company description = Usually not filtered
 
 JOB CONTEXT:
-${buildJobContext(job)}
+${context(job)}
 
 RESUME:
 ${resume}
@@ -266,13 +279,13 @@ MARKDOWN FORMATTING REQUIREMENTS:
 }
 
 // Build AI prompt for scoring with structured job data (for JSON/XML)
-function buildPrompt(resume: string, job: Job): string {
+function prompt(resume: string, job: Job): string {
   return `You are an ATS (Applicant Tracking System) compatibility analyzer providing detailed keyword and content analysis.
 
 Your goal: Help candidates understand how their resume aligns with job requirements and identify optimization opportunities.
 
 JOB POSTING:
-${buildJobContext(job)}
+${context(job)}
 
 RESUME:
 ${resume}
@@ -317,16 +330,22 @@ GUIDELINES:
 - For empty arrays, include at least one item like "None identified" or "No changes needed"`
 }
 
-// Score resume against job using AI
-async function score(resume: Resume, job: Job): Promise<Score> {
-  const prompt = buildPrompt(resume.text, job)
+// Analyze resume against job using AI
+async function analyze(resume: Resume, job: Job, config: Config = {}): Promise<Score> {
+  const opts = { ...defaults, ...config }
+  const promptText = prompt(resume.text, job)
 
   try {
     const { object } = await generateObject({
-      model: openai('gpt-5-mini'),
+      model: openai(opts.model),
       schema: ScoreSchema,
-      prompt,
-      maxRetries: 2
+      prompt: promptText,
+      maxRetries: 2,
+      providerOptions: {
+        openai: {
+          textVerbosity: opts.verbosity
+        }
+      }
     })
 
     return object
@@ -337,19 +356,26 @@ async function score(resume: Resume, job: Job): Promise<Score> {
   }
 }
 
-// Stream scoring with progress callbacks
-async function scoreStream(
+// Stream analysis with progress callbacks
+async function analyzeStream(
   resume: Resume,
   job: Job,
+  config: Config = {},
   onProgress?: (partial: any) => void
 ): Promise<Score> {
-  const prompt = buildPrompt(resume.text, job)
+  const opts = { ...defaults, ...config }
+  const promptText = prompt(resume.text, job)
 
   const { partialObjectStream, object } = streamObject({
-    model: openai('gpt-5-mini'),
+    model: openai(opts.model),
     schema: ScoreSchema,
-    prompt,
-    maxRetries: 2
+    prompt: promptText,
+    maxRetries: 2,
+    providerOptions: {
+      openai: {
+        textVerbosity: opts.verbosity
+      }
+    }
   })
 
   if (onProgress) {
@@ -363,12 +389,12 @@ async function scoreStream(
   } catch (error) {
     // If streaming fails, fall back to non-streaming
     console.error('\r📡 Streaming failed, falling back to standard generation')
-    return await score(resume, job)
+    return await analyze(resume, job, config)
   }
 }
 
-// Format score as different output types
-function format(score: Score, type: 'json' | 'xml' | 'markdown' = 'json'): string {
+// Render score as different output types
+function render(score: Score, type: 'json' | 'xml' | 'markdown' = 'json'): string {
   const flat = (obj: any, prefix = ''): string[] =>
     Object.entries(obj).flatMap(([k, v]) => {
       const key = prefix ? `${prefix}.${k}` : k
@@ -453,6 +479,7 @@ export async function ats(
     firecrawlKey?: string
     format?: 'json' | 'xml' | 'markdown'
     fresh?: boolean
+    config?: Config
   } = {}
 ): Promise<string> {
   const firecrawlKey = options.firecrawlKey || process.env.FIRECRAWL_API_KEY
@@ -462,15 +489,17 @@ export async function ats(
   const job = await scrape(jobUrl, firecrawlKey, { fresh: options.fresh })
 
   const formatType = options.format || 'markdown'
+  const config = { ...defaults, ...options.config }
 
   // For markdown, use streamText without streaming for simplicity
   if (formatType === 'markdown') {
     const result = streamText({
-      model: openai('gpt-5-mini'),
-      prompt: buildATSReasoningPrompt(resume.text, job),
+      model: openai(config.model),
+      prompt: reason(resume.text, job),
       providerOptions: {
         openai: {
-          reasoningSummary: 'detailed',
+          reasoningSummary: config.reasoning,
+          textVerbosity: config.verbosity
         },
       },
     })
@@ -484,8 +513,8 @@ export async function ats(
   }
 
   // For JSON/XML, use object generation
-  const result = await score(resume, job)
-  return format(result, formatType)
+  const result = await analyze(resume, job, config)
+  return render(result, formatType)
 }
 
 // Streaming API - with progress callbacks
@@ -496,7 +525,8 @@ export async function atsStream(
     firecrawlKey?: string
     format?: 'json' | 'xml' | 'markdown'
     fresh?: boolean
-    onProgress?: (progress: { phase: string; data?: any }) => void
+    config?: Config
+    onProgress?: (progress: ProgressUpdate) => void
   } = {}
 ): Promise<string> {
   const firecrawlKey = options.firecrawlKey || process.env.FIRECRAWL_API_KEY
@@ -513,17 +543,19 @@ export async function atsStream(
   options.onProgress?.({ phase: 'scraped', data: { title: job.title, company: job.company } })
 
   const formatType = options.format || 'markdown'
+  const config = { ...defaults, ...options.config }
 
   // For markdown, use streamText with reasoning
   if (formatType === 'markdown') {
     options.onProgress?.({ phase: 'analyzing' })
 
     const { fullStream, textStream } = streamText({
-      model: openai('gpt-5-mini'),
-      prompt: buildATSReasoningPrompt(resume.text, job),
+      model: openai(config.model),
+      prompt: reason(resume.text, job),
       providerOptions: {
         openai: {
-          reasoningSummary: 'detailed',
+          reasoningSummary: config.reasoning,
+          textVerbosity: config.verbosity
         },
       },
     })
@@ -555,13 +587,60 @@ export async function atsStream(
 
   // For JSON/XML, use object generation
   options.onProgress?.({ phase: 'scoring' })
-  const result = await scoreStream(resume, job, (partial) => {
+  const result = await analyzeStream(resume, job, config, (partial) => {
     options.onProgress?.({ phase: 'scoring', data: partial })
   })
   options.onProgress?.({ phase: 'complete', data: result })
 
-  return format(result, formatType)
+  return render(result, formatType)
+}
+
+// Progress callback types
+export type Phase =
+  | 'parsing'
+  | 'parsed'
+  | 'scraping'
+  | 'scraped'
+  | 'analyzing'
+  | 'reasoning'
+  | 'generating'
+  | 'scoring'
+  | 'complete'
+
+export interface ParsedData {
+  name?: string
+  email?: string
+}
+
+export interface ScrapedData {
+  title: string
+  company: string
+}
+
+export interface TextData {
+  text: string
+}
+
+export interface ScoringData {
+  score?: number
+  keywordAnalysis?: Partial<Score['keywordAnalysis']>
+  suggestions?: Partial<Score['suggestions']>
+  analysis?: Partial<Score['analysis']>
+  optimizations?: string[]
+}
+
+export type ProgressData =
+  | ParsedData
+  | ScrapedData
+  | TextData
+  | ScoringData
+  | Score
+  | undefined
+
+export interface ProgressUpdate {
+  phase: Phase
+  data?: ProgressData
 }
 
 // Export types for programmatic use
-export type { Resume, Job, Score }
+export type { Resume, Job, Score, Config }
