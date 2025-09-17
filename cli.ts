@@ -60,25 +60,15 @@ async function main() {
     process.exit(1)
   }
 
-  // Progress icons
-  const icons: Record<string, string> = {
-    parsing: '📄',
-    parsed: '✓',
-    scraping: '🔍',
-    scraped: '✓',
-    analyzing: '🤖',
-    analyzed: '✓',
-    reasoning: '💭',
-    generating: '✍️',
-    scoring: '📊',
-    complete: '✅'
-  }
+  // Animation dots
+  const dots = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 
   // Phase tracking
   const phases = ['parsed', 'scraped', 'analyzed']
   const completed = new Set<string>()
   let score = 0
   let isStreaming = false
+  let currentPhase = ''
 
   // Build accumulated status string
   const buildStatus = (current: string) => {
@@ -91,10 +81,10 @@ async function main() {
       }
     }
 
-    // Add current phase
+    // Add current phase with time-based spinner
     if (!['complete', 'generating', 'reasoning'].includes(current)) {
-      const icon = icons[current] || '⚡'
-      parts.push(`${icon} ${current}...`)
+      const dot = dots[Math.floor(Date.now() / 80) % dots.length]
+      parts.push(`${dot} ${current}`)
     }
 
     // Add score if available
@@ -104,6 +94,13 @@ async function main() {
 
     return parts.join(' | ')
   }
+
+  // Animate spinner
+  const interval = setInterval(() => {
+    if (currentPhase && !isStreaming) {
+      status(buildStatus(currentPhase))
+    }
+  }, 80)
 
   try {
     const result = await atsStream(resume, job, {
@@ -123,7 +120,9 @@ async function main() {
         // Mark phases as complete
         if (phase === 'parsed') completed.add('parsed')
         if (phase === 'scraped') completed.add('scraped')
-        if (phase === 'analyzing') completed.delete('analyzed') // Remove if re-analyzing
+        if (phase === 'analyzing') {
+          completed.delete('analyzed') // Remove if re-analyzing
+        }
         if (phase === 'reasoning' || phase === 'generating' || phase === 'scoring') {
           completed.add('analyzed')
         }
@@ -132,25 +131,33 @@ async function main() {
         if (data && 'text' in data) {
           if (phase === 'reasoning') {
             if (!isStreaming) {
-              done() // Clear status line before streaming
+              // Flash the completed status briefly
+              status('✓ parsed | ✓ scraped | ✓ analyzed\n\n')
+              setTimeout(done, 100) // Brief pause to show checkmark
               isStreaming = true
+              currentPhase = '' // Stop animation during streaming
             }
             write(data.text)
           } else if (phase === 'generating') {
             if (!isStreaming) {
-              done() // Clear status line before streaming
+              // Flash the completed status briefly
+              status('✓ parsed | ✓ scraped | ✓ analyzed\n\n')
+              setTimeout(done, 100) // Brief pause to show checkmark
               isStreaming = true
+              currentPhase = '' // Stop animation during streaming
             }
             write(data.text)
           }
         } else if (phase !== 'complete') {
           // Show accumulated status updates
+          currentPhase = phase
           status(buildStatus(phase))
           isStreaming = false
         }
 
         // Clear status when complete
         if (phase === 'complete') {
+          currentPhase = ''
           done()
         }
       }
@@ -165,6 +172,8 @@ async function main() {
     const message = error instanceof Error ? error.message : 'Unknown error'
     console.error(`\n❌ Error: ${message}`)
     process.exit(1)
+  } finally {
+    clearInterval(interval)
   }
 }
 

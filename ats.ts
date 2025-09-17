@@ -10,6 +10,7 @@ import FirecrawlApp from '@mendable/firecrawl-js'
 import { z } from 'zod'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { toXML } from 'jstoxml'
 
 
 // Simple interfaces - no over-engineering
@@ -408,37 +409,12 @@ async function analyzeStream(
 
 // Render score as different output types
 function render(score: Score, type: 'json' | 'xml' | 'markdown' = 'json'): string {
-  const toXml = (obj: any, tagName: string = 'evaluation'): string => {
-    if (Array.isArray(obj)) {
-      return obj.map((item, index) => toXml(item, `${tagName}_${index}`)).join('')
-    }
-
-    if (obj && typeof obj === 'object') {
-      const entries = Object.entries(obj)
-      if (entries.length === 0) return `<${tagName}></${tagName}>`
-
-      const content = entries.map(([key, value]) => {
-        const xmlKey = key.replace(/[^a-zA-Z0-9_-]/g, '_')
-        return toXml(value, xmlKey)
-      }).join('')
-
-      return `<${tagName}>${content}</${tagName}>`
-    }
-
-    // Escape XML special characters
-    const escaped = String(obj)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
-
-    return `<${tagName}>${escaped}</${tagName}>`
-  }
-
   switch (type) {
     case 'json': return JSON.stringify(score, null, 2)
-    case 'xml': return `<?xml version="1.0"?>\n${toXml(score)}`
+    case 'xml': return toXML({ evaluation: score }, {
+      header: true,
+      indent: '  '
+    })
     case 'markdown': {
       const { keywordAnalysis, suggestions, analysis, optimizations } = score
 
@@ -588,7 +564,7 @@ export async function atsStream(
       model: openai(config.model),
       prompt: reason(resume.text, job),
       abortSignal: options.abortSignal,
-      experimental_transform: smoothStream({ chunking: 'line' }),
+      experimental_transform: smoothStream({ chunking: 'word' }),
       providerOptions: {
         openai: {
           reasoningSummary: config.reasoning === 'none' ? 'auto' : config.reasoning,
