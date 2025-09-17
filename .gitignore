@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build artifacts (generated via pnpm build)
+dist/
+
+# Environment secrets
+.env
+.env.*
+
+# Local files
+*resume*.pdf
+pnpm-debug.log*
+*.log
+*.tgz
+.DS_Store
+
+.claude
+AGENTS.md
+CLAUDE.md

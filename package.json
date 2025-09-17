@@ -1,0 +1,51 @@
+{
+  "name": "jobheist",
+  "version": "1.0.0",
+  "description": "Plan the perfect job heist - outsmart ATS filters with AI-powered resume analysis",
+  "main": "dist/ats.js",
+  "type": "module",
+  "bin": {
+    "jobheist": "./dist/cli.js"
+  },
+  "scripts": {
+    "jobheist": "tsx cli.ts",
+    "build": "tsc",
+    "dev": "tsx --watch cli.ts"
+  },
+  "keywords": [
+    "ats",
+    "resume",
+    "job",
+    "cv",
+    "ai",
+    "career",
+    "applicant-tracking-system",
+    "job-search",
+    "resume-scanner"
+  ],
+  "author": "Micah Rich",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/micahbrich/jobheist.git"
+  },
+  "bugs": {
+    "url": "https://github.com/micahbrich/jobheist/issues"
+  },
+  "homepage": "https://github.com/micahbrich/jobheist#readme",
+  "packageManager": "pnpm@10.13.1",
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "@types/pdf-parse": "^1.1.5",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.28",
+    "@mendable/firecrawl-js": "^4.3.4",
+    "ai": "^5.0.41",
+    "dotenv": "^16.4.7",
+    "pdfjs-dist": "^5.4.149",
+    "zod": "^4.1.8"
+  }
+}

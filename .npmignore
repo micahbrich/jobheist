@@ -1,0 +1,37 @@
+# Development files
+.claude/
+CLAUDE.md
+tsconfig.json
+*.ts
+!*.d.ts
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Test files
+*.pdf
+*.test.*
+*.spec.*
+
+# Git files
+.git/
+.gitignore
+
+# Build tools
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Source files (we ship compiled JS)
+ats.ts
+cli.ts
