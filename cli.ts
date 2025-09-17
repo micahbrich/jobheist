@@ -15,14 +15,10 @@ import args from 'args'
 // Load global config if it exists (~/.jobheistrc)
 config({ path: join(homedir(), '.jobheistrc') })
 
-// Phase constants
-const PHASES = {
-  parsing: '⏳ Parsing resume...',
-  scraping: '⏳ Fetching job posting...',
-  analyzing: '⏳ Analyzing compatibility...',
-  generating: '\n📝 Generating report...',
-  complete: '\n✅ Analysis complete!\n'
-} as const
+// Simple output utilities
+const write = (text: string) => process.stdout.write(text)
+const status = (text: string) => process.stderr.write(`\r\x1b[K${text}`)
+const done = () => process.stderr.write('\n')
 
 // Configure args
 args
@@ -38,100 +34,98 @@ args
   .example('jobheist resume.pdf job-url --reasoning=detailed --fresh', 'Detailed reasoning with fresh data')
   .example('jobheist resume.pdf job-url --firecrawl-key=fc_xxx --openai-key=sk-xxx', 'With API keys')
 
-// Parse arguments
 const parsed = args.parse(process.argv)
 
 // Main execution
 async function main() {
-  // Get positional arguments from args.sub
   const [resume, job] = args.sub || []
 
   if (!resume || !job) {
-    console.error('Error: Both resume and job URL are required')
+    console.error('Usage: jobheist resume.pdf https://job-url')
     args.showHelp()
     process.exit(1)
   }
 
-  // Set API keys from CLI flags if provided (override env)
-  if (parsed['firecrawl-key']) {
-    process.env.FIRECRAWL_API_KEY = parsed['firecrawl-key']
-  }
-  if (parsed['openai-key']) {
-    process.env.OPENAI_API_KEY = parsed['openai-key']
-  }
+  // Set API keys from CLI flags if provided
+  if (parsed['firecrawl-key']) process.env.FIRECRAWL_API_KEY = parsed['firecrawl-key']
+  if (parsed['openai-key']) process.env.OPENAI_API_KEY = parsed['openai-key']
 
   // Check for required API keys
-  if (!process.env.FIRECRAWL_API_KEY) {
-    console.error('Error: FIRECRAWL_API_KEY is required')
-    console.error('Provide it via:')
-    console.error('  1. Command line: --firecrawl-key=fc_xxx')
-    console.error('  2. Environment: export FIRECRAWL_API_KEY=fc_xxx')
-    console.error('  3. Local .env file')
-    console.error('  4. Global config: echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheistrc')
+  if (!process.env.FIRECRAWL_API_KEY || !process.env.OPENAI_API_KEY) {
+    console.error('Missing API keys. Set via:')
+    console.error('  --firecrawl-key=fc_xxx --openai-key=sk-xxx')
+    console.error('  export FIRECRAWL_API_KEY=fc_xxx OPENAI_API_KEY=sk-xxx')
+    console.error('  echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheistrc')
     process.exit(1)
   }
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('Error: OPENAI_API_KEY is required')
-    console.error('Provide it via:')
-    console.error('  1. Command line: --openai-key=sk-xxx')
-    console.error('  2. Environment: export OPENAI_API_KEY=sk-xxx')
-    console.error('  3. Local .env file')
-    console.error('  4. Global config: echo "OPENAI_API_KEY=sk-xxx" >> ~/.jobheistrc')
-    process.exit(1)
+
+  // Progress icons
+  const icons: Record<string, string> = {
+    parsing: '📄',
+    parsed: '✓',
+    scraping: '🔍',
+    scraped: '✓',
+    analyzing: '🤖',
+    reasoning: '💭',
+    generating: '✍️',
+    scoring: '📊',
+    complete: '✅'
   }
+
+  let score = 0
+  let isStreaming = false
 
   try {
-    // Pure utility functions
-    const emoji = (n: number) => {
-      if (n >= 80) return '🏆'
-      if (n >= 60) return '🥇'
-      if (n >= 40) return '⚠️'
-      return '🚨'
-    }
-
-    // Track state
-    let lastPhase = ''
-    let scoreShown = false
-
     const result = await atsStream(resume, job, {
-      format: parsed.format as any,
+      format: parsed.format as 'markdown' | 'json' | 'xml',
       fresh: parsed.fresh,
       config: {
-        ...(parsed.model && { model: parsed.model }),
-        ...(parsed.verbosity && { verbosity: parsed.verbosity }),
-        ...(parsed.reasoning && { reasoning: parsed.reasoning })
+        model: parsed.model,
+        verbosity: parsed.verbosity as 'low' | 'medium' | 'high',
+        reasoning: parsed.reasoning as 'auto' | 'detailed'
       },
-      onProgress: (progress) => {
-        // Simple phase messages
-        if (PHASES[progress.phase as keyof typeof PHASES] && lastPhase !== progress.phase) {
-          lastPhase = progress.phase
-          console.error(PHASES[progress.phase as keyof typeof PHASES])
+      onProgress: ({ phase, data }) => {
+        // Update score if available
+        if (data && 'score' in data && typeof data.score === 'number') {
+          score = data.score
         }
 
-        // Stream reasoning directly with italic gray formatting
-        if (progress.phase === 'reasoning' && progress.data && 'text' in progress.data) {
-          process.stderr.write(`\x1b[3m\x1b[90m${progress.data.text}\x1b[0m`)
-        }
-
-        // Show score for JSON/XML
-        if (progress.phase === 'scoring' && progress.data && 'score' in progress.data && parsed.format !== 'markdown' && !scoreShown) {
-          scoreShown = true
-          const { score } = progress.data
-          if (typeof score === 'number') {
-            console.error(`${emoji(score)} Score: ${score}/100`)
+        // Stream text content directly
+        if ((phase === 'reasoning' || phase === 'generating') && data && 'text' in data) {
+          if (!isStreaming) {
+            done() // Clear status line before streaming
+            isStreaming = true
           }
+          write(data.text)
+        } else {
+          // Show status updates
+          const icon = icons[phase] || '⚡'
+          const scoreText = score ? ` | ${score}/100` : ''
+          status(`${icon} ${phase}${scoreText}`)
+          isStreaming = false
+        }
+
+        // Clear status when complete
+        if (phase === 'complete') {
+          done()
         }
       }
     })
 
-    // Output the result directly
-    console.log(result)
-
+    // Output result if not already streamed
+    if (parsed.format !== 'markdown' || !result) {
+      console.log(result)
+    }
   } catch (error) {
-    console.error('\n❌ Error:', error instanceof Error ? error.message : error)
+    done()
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error(`\n❌ Error: ${message}`)
     process.exit(1)
   }
 }
 
-// Run if executed directly
-main().catch(console.error)
+// Run
+main().catch(error => {
+  console.error(error)
+  process.exit(1)
+})

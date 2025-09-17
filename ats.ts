@@ -264,6 +264,8 @@ Output natural, helpful markdown that:
 
 Be honest about what matters and what doesn't. For example, "polished" or "innovative" are unlikely ATS filters, while "Figma" or "Python" definitely are.
 
+IMPORTANT: Do NOT include the full resume text in your response. Only reference specific parts when making suggestions or showing examples.
+
 Your entire job is to give this advice. You don't need to offer to do anything else.
 
 MARKDOWN FORMATTING REQUIREMENTS:
@@ -361,7 +363,8 @@ async function analyzeStream(
   resume: Resume,
   job: Job,
   config: Config = {},
-  onProgress?: (partial: any) => void
+  onProgress?: (partial: any) => void,
+  abortSignal?: AbortSignal
 ): Promise<Score> {
   const opts = { ...defaults, ...config }
   const promptText = prompt(resume.text, job)
@@ -371,6 +374,7 @@ async function analyzeStream(
     schema: ScoreSchema,
     prompt: promptText,
     maxRetries: 2,
+    abortSignal,
     providerOptions: {
       openai: {
         textVerbosity: opts.verbosity
@@ -395,18 +399,37 @@ async function analyzeStream(
 
 // Render score as different output types
 function render(score: Score, type: 'json' | 'xml' | 'markdown' = 'json'): string {
-  const flat = (obj: any, prefix = ''): string[] =>
-    Object.entries(obj).flatMap(([k, v]) => {
-      const key = prefix ? `${prefix}.${k}` : k
-      return Array.isArray(v) ? [`${key}: ${v.join(', ') || 'None'}`]
-        : typeof v === 'object' ? flat(v, key)
-          : [`${key}: ${v}`]
-    })
+  const toXml = (obj: any, tagName: string = 'evaluation'): string => {
+    if (Array.isArray(obj)) {
+      return obj.map((item, index) => toXml(item, `${tagName}_${index}`)).join('')
+    }
+
+    if (obj && typeof obj === 'object') {
+      const entries = Object.entries(obj)
+      if (entries.length === 0) return `<${tagName}></${tagName}>`
+
+      const content = entries.map(([key, value]) => {
+        const xmlKey = key.replace(/[^a-zA-Z0-9_-]/g, '_')
+        return toXml(value, xmlKey)
+      }).join('')
+
+      return `<${tagName}>${content}</${tagName}>`
+    }
+
+    // Escape XML special characters
+    const escaped = String(obj)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+
+    return `<${tagName}>${escaped}</${tagName}>`
+  }
 
   switch (type) {
     case 'json': return JSON.stringify(score, null, 2)
-    case 'xml': return `<?xml version="1.0"?>\n<evaluation>\n${flat(score).map(l => `  <${l.split(':')[0].replace(/\./g, '_')}>${l.split(':')[1]?.trim()}</${l.split(':')[0].replace(/\./g, '_')}>`).join('\n')
-      }\n</evaluation>`
+    case 'xml': return `<?xml version="1.0"?>\n${toXml(score)}`
     case 'markdown': {
       const { keywordAnalysis, suggestions, analysis, optimizations } = score
 
@@ -480,6 +503,7 @@ export async function ats(
     format?: 'json' | 'xml' | 'markdown'
     fresh?: boolean
     config?: Config
+    abortSignal?: AbortSignal
   } = {}
 ): Promise<string> {
   const firecrawlKey = options.firecrawlKey || process.env.FIRECRAWL_API_KEY
@@ -496,6 +520,7 @@ export async function ats(
     const result = streamText({
       model: openai(config.model),
       prompt: reason(resume.text, job),
+      abortSignal: options.abortSignal,
       providerOptions: {
         openai: {
           reasoningSummary: config.reasoning,
@@ -512,8 +537,8 @@ export async function ats(
     return text
   }
 
-  // For JSON/XML, use object generation
-  const result = await analyze(resume, job, config)
+  // For JSON/XML, use streaming object generation
+  const result = await analyzeStream(resume, job, config, undefined, options.abortSignal)
   return render(result, formatType)
 }
 
@@ -527,6 +552,7 @@ export async function atsStream(
     fresh?: boolean
     config?: Config
     onProgress?: (progress: ProgressUpdate) => void
+    abortSignal?: AbortSignal
   } = {}
 ): Promise<string> {
   const firecrawlKey = options.firecrawlKey || process.env.FIRECRAWL_API_KEY
@@ -552,6 +578,7 @@ export async function atsStream(
     const { fullStream, textStream } = streamText({
       model: openai(config.model),
       prompt: reason(resume.text, job),
+      abortSignal: options.abortSignal,
       providerOptions: {
         openai: {
           reasoningSummary: config.reasoning,
@@ -560,23 +587,26 @@ export async function atsStream(
       },
     })
 
-    // Show reasoning and text generation progress
+    // Accumulate the final text while showing progress
+    let result = ''
+
     if (options.onProgress) {
-      (async () => {
+      // Process both streams properly
+      const processStream = async () => {
         for await (const part of fullStream) {
           if (part.type === 'reasoning-delta') {
-            // reasoning-delta has a 'text' property
             options.onProgress!({ phase: 'reasoning', data: { text: part.text } })
           } else if (part.type === 'text-delta') {
-            // text-delta has a 'text' property
             options.onProgress!({ phase: 'generating', data: { text: part.text } })
           }
         }
-      })()
+      }
+
+      // Start processing stream
+      processStream()
     }
 
-    // Accumulate the final text
-    let result = ''
+    // Collect the actual text result
     for await (const chunk of textStream) {
       result += chunk
     }
@@ -589,7 +619,7 @@ export async function atsStream(
   options.onProgress?.({ phase: 'scoring' })
   const result = await analyzeStream(resume, job, config, (partial) => {
     options.onProgress?.({ phase: 'scoring', data: partial })
-  })
+  }, options.abortSignal)
   options.onProgress?.({ phase: 'complete', data: result })
 
   return render(result, formatType)

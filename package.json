@@ -55,6 +55,7 @@
     "@mendable/firecrawl-js": "^4.3.4",
     "ai": "^5.0.41",
     "args": "^5.0.3",
+    "cli-spinners": "^3.2.0",
     "dotenv": "^16.4.7",
     "pdfjs-dist": "^5.4.149",
     "zod": "^4.1.8"

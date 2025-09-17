@@ -6,7 +6,8 @@ Complete documentation for the jobheist ATS analysis library.
 
 - [API Reference](./api-reference.mdx) - Complete function and type reference
 - [Progress Phases](./progress-phases.mdx) - Detailed onProgress callback documentation
-- [Examples](./examples.mdx) - Real-world usage patterns and integrations
+- [Example Outputs](./examples.mdx) - Real sample outputs and analysis reports
+- [Usage Patterns](./usage-patterns.mdx) - Code examples and integration patterns
 - [Troubleshooting](./troubleshooting.mdx) - Common issues and solutions
 
 ## Quick Links

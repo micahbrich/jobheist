@@ -1,313 +1,378 @@
 ---
-title: Examples
-description: Real-world usage examples and patterns for jobheist
+title: Example Outputs
+description: Real-world sample outputs and analysis reports from jobheist
 ---
 
-# Examples
+# Example Outputs
 
-## Basic Usage
+See what jobheist actually produces - real analysis reports, scores, and recommendations.
 
-### Simple Analysis
-```typescript
-import { ats } from 'jobheist'
+## Markdown Output (Default)
 
-const result = await ats('resume.pdf', 'https://example.com/job')
-console.log(result)
+The default markdown format provides human-readable analysis with scores and actionable suggestions:
+
+```markdown
+# ATS Compatibility Analysis — Senior Frontend Developer at Acme Corp
+
+**Compatibility Score: 78/100** 🥇
+
+## Keyword Analysis
+
+### ✅ Strong Matches
+- **React** - You: 12x | Job: 8x
+- **TypeScript** - You: 15x | Job: 10x
+- **Next.js** - You: 6x | Job: 5x
+- **Tailwind CSS** - You: 8x | Job: 6x
+
+### ⚠️ Under-represented Keywords
+- **GraphQL** - You: 2x | Job: 8x
+  → Consider: Add more GraphQL experience in your projects section
+- **Jest** - You: 1x | Job: 6x
+  → Consider: Highlight testing experience with specific Jest examples
+
+### ❌ Keywords Not Found
+- **Storybook** - Job mentions: 4x
+  → Consider: Add Storybook to your component development workflow
+- **Docker** - Job mentions: 5x
+  → Consider: Include containerization experience in your DevOps skills
+
+## Optimization Opportunities
+
+### Suggestion #1: Add Testing Section
+**Current:** "Experienced with testing frameworks"
+**Consider:** "Built comprehensive test suites using Jest, React Testing Library, and Cypress for 95%+ coverage"
+**Potential Impact:** +8 points
+**Rationale:** The job emphasizes testing culture and you have the experience
+
+### Suggestion #2: Enhance GraphQL Experience
+**Current:** "Worked with various APIs"
+**Consider:** "Designed and implemented GraphQL APIs with Apollo Client, handling complex data relationships and real-time subscriptions"
+**Potential Impact:** +12 points
+**Rationale:** GraphQL is a key requirement and you have backend experience
+
+## Role Analysis
+
+### Top Priorities
+- Component-driven development with Storybook
+- Testing culture and quality assurance
+- GraphQL API integration
+- Performance optimization
+
+### Your Strengths
+- Strong React and TypeScript foundation
+- Modern CSS with Tailwind
+- Next.js full-stack experience
+- Clean code practices
+
+### Opportunities
+- Testing framework expertise
+- GraphQL implementation
+- Component documentation
+- DevOps and containerization
+
+## Quick Optimizations
+→ Add "Jest" and "React Testing Library" to your skills section
+→ Include "Storybook" in your component development experience
+→ Mention "Docker" and "containerization" in your DevOps skills
+→ Add specific testing metrics (coverage percentages, test counts)
+
+## Compatibility Assessment
+**Current Match:** 78%
+**Potential Match:** 92%
+**Possible Improvement:** +14%
+
+👍 **Good match** - Solid foundation with room for optimization
 ```
 
-### Different Output Formats
-```typescript
-import { ats } from 'jobheist'
+## JSON Output
 
-// Markdown (default)
-const markdown = await ats('resume.pdf', 'https://example.com/job')
+Structured data perfect for automation and pipelines:
 
-// JSON for automation
-const json = await ats('resume.pdf', 'https://example.com/job', {
-  format: 'json'
-})
-
-// XML for enterprise systems
-const xml = await ats('resume.pdf', 'https://example.com/job', {
-  format: 'xml'
-})
-```
-
-## Progress Tracking
-
-### Basic Progress Updates
-```typescript
-import { atsStream } from 'jobheist'
-
-await atsStream('resume.pdf', 'https://job-url', {
-  onProgress: (progress) => {
-    console.log(`Phase: ${progress.phase}`)
-  }
-})
-```
-
-### CLI-Style Progress
-```typescript
-import { atsStream } from 'jobheist'
-
-const phases = {
-  parsing: '⏳ Parsing resume...',
-  scraping: '⏳ Fetching job posting...',
-  analyzing: '⏳ Analyzing compatibility...',
-  complete: '✅ Analysis complete!'
-}
-
-await atsStream('resume.pdf', 'https://job-url', {
-  onProgress: (progress) => {
-    if (phases[progress.phase]) {
-      console.error(phases[progress.phase])
-    }
-  }
-})
-```
-
-### Real-time Text Streaming
-```typescript
-import { atsStream } from 'jobheist'
-
-await atsStream('resume.pdf', 'https://job-url', {
-  format: 'markdown',
-  onProgress: (progress) => {
-    if (progress.phase === 'reasoning') {
-      process.stderr.write(progress.data?.text || '')
-    }
-    if (progress.phase === 'generating') {
-      process.stdout.write(progress.data?.text || '')
-    }
-  }
-})
-```
-
-## Advanced Patterns
-
-### Batch Processing
-```typescript
-import { ats } from 'jobheist'
-
-const jobs = [
-  'https://company1.com/job1',
-  'https://company2.com/job2',
-  'https://company3.com/job3'
-]
-
-const results = await Promise.all(
-  jobs.map(job => ats('resume.pdf', job, { format: 'json' }))
-)
-
-results.forEach((result, index) => {
-  const data = JSON.parse(result)
-  console.log(`Job ${index + 1}: ${data.score}/100`)
-})
-```
-
-### Error Handling
-```typescript
-import { ats } from 'jobheist'
-
-try {
-  const result = await ats('resume.pdf', 'https://job-url')
-  console.log(result)
-} catch (error) {
-  if (error.message.includes('FIRECRAWL_API_KEY')) {
-    console.error('Please set your Firecrawl API key')
-  } else if (error.message.includes('Failed to parse PDF')) {
-    console.error('PDF parsing failed - check file format')
-  } else {
-    console.error('Analysis failed:', error.message)
-  }
-}
-```
-
-### Custom Progress UI
-```typescript
-import { atsStream } from 'jobheist'
-
-class ProgressUI {
-  private currentPhase = ''
-  
-  async analyze(resume: string, jobUrl: string) {
-    return await atsStream(resume, jobUrl, {
-      onProgress: (progress) => {
-        this.updateUI(progress)
+```json
+{
+  "score": 78,
+  "keywordAnalysis": {
+    "strongMatches": [
+      {
+        "keyword": "React",
+        "jobFrequency": 8,
+        "resumeFrequency": 12
+      },
+      {
+        "keyword": "TypeScript",
+        "jobFrequency": 10,
+        "resumeFrequency": 15
       }
-    })
-  }
-  
-  private updateUI(progress: any) {
-    if (progress.phase !== this.currentPhase) {
-      this.currentPhase = progress.phase
-      this.showPhase(progress.phase)
+    ],
+    "underRepresented": [
+      {
+        "keyword": "GraphQL",
+        "jobFrequency": 8,
+        "resumeFrequency": 2,
+        "suggestion": "Add more GraphQL experience in your projects section"
+      }
+    ],
+    "notFound": [
+      {
+        "keyword": "Storybook",
+        "jobFrequency": 4,
+        "impact": 8,
+        "suggestion": "Add Storybook to your component development workflow"
+      }
+    ]
+  },
+  "suggestions": [
+    {
+      "type": "add",
+      "location": "Testing Section",
+      "suggested": "Built comprehensive test suites using Jest, React Testing Library, and Cypress for 95%+ coverage",
+      "impact": 8,
+      "rationale": "The job emphasizes testing culture and you have the experience"
     }
-    
-    if (progress.data?.text) {
-      this.streamText(progress.data.text)
+  ],
+  "analysis": {
+    "topPriorities": [
+      "Component-driven development with Storybook",
+      "Testing culture and quality assurance",
+      "GraphQL API integration"
+    ],
+    "currentStrengths": [
+      "Strong React and TypeScript foundation",
+      "Modern CSS with Tailwind",
+      "Next.js full-stack experience"
+    ],
+    "opportunities": [
+      "Testing framework expertise",
+      "GraphQL implementation",
+      "Component documentation"
+    ],
+    "compatibility": {
+      "current": 78,
+      "potential": 92
     }
-  }
-  
-  private showPhase(phase: string) {
-    // Update your UI here
-    console.log(`Phase: ${phase}`)
-  }
-  
-  private streamText(text: string) {
-    // Stream text to your UI
-    process.stdout.write(text)
-  }
+  },
+  "optimizations": [
+    "Add \"Jest\" and \"React Testing Library\" to your skills section",
+    "Include \"Storybook\" in your component development experience",
+    "Mention \"Docker\" and \"containerization\" in your DevOps skills"
+  ]
 }
-
-const ui = new ProgressUI()
-await ui.analyze('resume.pdf', 'https://job-url')
 ```
 
-## CLI Examples
+## XML Output
 
-### Basic Analysis
+For enterprise systems that prefer structured markup:
+
+```xml
+<?xml version="1.0"?>
+<evaluation>
+  <score>78</score>
+  <keywordAnalysis>
+    <strongMatches>React: 12x | TypeScript: 15x | Next.js: 6x</strongMatches>
+    <underRepresented>GraphQL: 2x vs 8x | Jest: 1x vs 6x</underRepresented>
+    <notFound>Storybook: 0x vs 4x | Docker: 0x vs 5x</notFound>
+  </keywordAnalysis>
+  <suggestions>
+    <suggestion>
+      <type>add</type>
+      <location>Testing Section</location>
+      <suggested>Built comprehensive test suites using Jest, React Testing Library, and Cypress for 95%+ coverage</suggested>
+      <impact>8</impact>
+      <rationale>The job emphasizes testing culture and you have the experience</rationale>
+    </suggestion>
+  </suggestions>
+  <analysis>
+    <topPriorities>Component-driven development with Storybook, Testing culture and quality assurance, GraphQL API integration</topPriorities>
+    <currentStrengths>Strong React and TypeScript foundation, Modern CSS with Tailwind, Next.js full-stack experience</currentStrengths>
+    <opportunities>Testing framework expertise, GraphQL implementation, Component documentation</opportunities>
+    <compatibility>
+      <current>78</current>
+      <potential>92</potential>
+    </compatibility>
+  </analysis>
+  <optimizations>Add "Jest" and "React Testing Library" to your skills section, Include "Storybook" in your component development experience, Mention "Docker" and "containerization" in your DevOps skills</optimizations>
+</evaluation>
+```
+
+## Score Ranges & Emojis
+
+jobheist uses a simple 4-tier scoring system:
+
+- **🏆 80-100**: Excellent match - Strong alignment with requirements
+- **🥇 60-79**: Good match - Solid foundation with room for optimization  
+- **⚠️ 40-59**: Moderate match - Consider the suggestions to strengthen alignment
+- **🚨 0-39**: Limited match - Significant improvements recommended
+
+## Real-World Example
+
+Here's an actual analysis from a recent job application to Vercel:
+
 ```bash
-# Simple analysis
-jobheist resume.pdf https://example.com/job
+$ jobheist resume.pdf https://vercel.com/careers/dx-engineer-education-us-5594622004
 
-# JSON output
-jobheist resume.pdf https://example.com/job --format=json
+⏳ Parsing resume...
+⏳ Fetching job posting...
+⏳ Analyzing compatibility...
 
-# Fresh data (skip cache)
-jobheist resume.pdf https://example.com/job --fresh
+**Analyzing ATS Compatibility for Vercel DX Engineer**
+
+I need to produce a markdown document that includes specified headings, emphasizes keywords, and includes a compatibility score. I should summarize which keywords are important, distinguishing between exact matches and near-misses, alongside the pass probability. I'll suggest actionable improvements with exact phrases for the resume content.
+
+Micah has a robust background with over 15 years of experience and specific technologies like Next.js, React, TypeScript, and more. I'll focus on ensuring the resume aligns well with ATS behavior.
+
+📝 Generating report...
+
+✅ Analysis complete!
+
+# ATS Compatibility Report — DX Engineer, Education (Vercel)
+
+**Compatibility score: 82%**  
+Summary: The resume contains many high-value ATS keywords (React, Next.js, Vercel, curriculum design, developer education, technical writing). Missing are a few exact phrase matches the job explicitly implies (`8+ years` phrasing, `developer education at scale` exact wording, `CLIs`/`git-like CMS` phrasing). With targeted, truthful phrase additions this resume will very likely pass an automated keyword screen.
+
+---
+
+## What ATS actually filters on (what matters here)
+- High-value filters (actual ATS tokens to satisfy)
+  - **Technologies & tools**: `React`, `React.js`, `Next.js`, `Vercel`, `TypeScript`, `Supabase`, `Postgres`
+  - **Exact experience quantities**: `8+ years`, `15+ years`, `5+ years`, etc.
+  - **Role-specific phrases**: `developer education`, `curriculum development`, `technical writing`
+  - **Infrastructure terms**: `CLI`, `CLI tools`, `APIs`, `content management system`, `CMS`, `git-like CMS`
+  - **Job title / domain**: `Developer Experience`, `DX Engineer`, `Education`
+- Low-value (rarely filtered)
+  - Soft adjectives: `innovative`, `polished`, `self-starter` (these matter to humans, not ATS)
+  - Generic leadership copy without keywords
+
+> Key insight: ATS looks for token matches in required/skills fields. Exact string forms matter (see below). Put critical phrases in summary, skills, and bullets under jobs.
+
+---
+
+## Exact matches vs near-misses
+
+| Job requirement / keyword | Resume status | Notes |
+|---|---:|---|
+| `React` | Exact match | Appears in bullets and tech list. Good. |
+| `Next.js` | Exact match (`Next.js`) | Good. |
+| `React.js` / `ReactJS` | Near-miss/optional | Resume uses `React` and `React Server Components`. Add `React.js`/`ReactJS` variants if ATS expects them. |
+| `8+ years building production web applications` | Near-miss | Resume says `15+ years` in summary but does not include the exact `8+ years` phrase nor `building production web applications` as a single token. Add explicit phrase. |
+| `Proven track record creating developer education at scale` | Near-match | Strong signals: General Assembly and League reach many users, but the exact phrasing `developer education at scale` and `reaching thousands` are not a single ATS token. Add explicit phrase with numbers. |
+| `Engineering skills to build/maintain CLIs, APIs, CMS` | Partial match | Resume lists platform engineering, CI/CD, CMS-like work, but `CLI`, `git-like CMS`, and `content management system` tokens are not explicit. Add them. |
+| `Exceptional technical writing` | Partial match | `Technical writing` and `documentation systems` exist — add `Exceptional technical writing` phrase to match requirement. |
+| `Self-directed` / `extreme ownership` | Near-miss | Implicit via founder/lead roles, but not the exact phrase. Add exact token. |
+| `Passion for empowering developers` | Near-miss | Implicit; add exact phrase for ATS. |
+
+---
+
+## Realistic pass probability (based on typical ATS behavior)
+- **Automated keyword screen (strict parsing of required tokens): ~85%** — many required technologies and education signals are present. Missing exact tokens lower this slightly.
+- **Human/recruiter screen after ATS pass: ~60%** — strong real-world fit, but needs clearer, explicit phrasing of scale, infrastructure, and DX-specific language to jump to "must-interview."
+
+> Warning: Small exact-phrase differences (e.g., `React` vs `React.js`, or lack of `8+ years`) are common reasons resumes fall out of automated screens.
+
+---
+
+## Specific, actionable edits — exact phrases to add and where
+
+Add these exact phrases (copy-paste) in the indicated locations. Be truthful; these are phrasing edits, not new claims.
+
+### Top summary / headline (directly under name)
+- Add line:
+  - `8+ years building production web applications with deep expertise in React, Next.js, and the modern web ecosystem`
+- Add keywords:
+  - `Developer Experience (DX) Engineer | Developer Education | Technical Writer`
+
+Example single-line summary to insert or replace an existing summary sentence:
+- `15+ years designing and building web products — 8+ years building production web applications with deep expertise in React, Next.js, and the modern web ecosystem. Developer Experience (DX) Engineer focused on developer education and technical writing.`
+
+### Skills / Technical Skills section
+Add tokens (comma-separated or in the bullets):
+- `React.js, React, ReactJS`
+- `Next.js, Nextjs`
+- `CLI tools / CLIs`
+- `APIs (REST & GraphQL)`
+- `Content management systems (CMS) / git-like CMS`
+- `Developer Experience (DX)`
+
+### General Assembly role (under bullets)
+Add a bullet:
+- `Proven track record creating developer education at scale: designed courses and curriculum reaching thousands across 14 international markets.`
+
+### The League / Founder role (under bullets)
+Add a bullet:
+- `Built and maintained content platforms and educational infrastructure (APIs, CMS, membership systems) supporting 35,000+ subscribers and curriculum reaching millions.`
+
+### Wildebeest / Tech Lead bullets
+Add or modify a bullet:
+- `Built developer-facing tools and educational infrastructure including CLIs, internal APIs, and CMS integrations; deployed on Vercel.`
+
+### Teaching & Education or Technical Writing section
+Add lead sentence:
+- `Exceptional technical writing and instructional design — able to make complex concepts accessible through practical examples and reproducible labs.`
+
+### Soft/ownership phrasing (summary or bullet near top)
+Add one-line:
+- `Self-directed with extreme ownership — I ship without waiting for permission and iterate on developer-facing instruction and platforms.`
+
+---
+
+## Minimal edits checklist (apply these 6 places)
+- Summary: add `8+ years building production web applications with deep expertise in React, Next.js`
+- Summary: add `Developer Experience (DX) Engineer`
+- Tech skills: add `React.js`, `ReactJS`, `Nextjs`, `CLI`, `CMS`, `git-like CMS`
+- GA bullets: add `developer education at scale` + `reaching thousands`
+- League bullets: add `educational infrastructure`, `CMS`, `APIs`, `35,000+ subscribers`
+- Teaching section: add `Exceptional technical writing`
+
+---
+
+> Final note: The resume is strong for this role. The ATS gap is mostly about exact-token matches and explicit scale / infrastructure phrases. Make the short, truthful insertions above and you'll significantly increase both ATS pass rate and recruiter confidence.
 ```
 
-### With API Keys
+This analysis shows the real depth and specificity that jobheist provides - not just generic advice, but exact phrases to add and where to place them! 🎯
+
+## Configuration Examples
+
+### High Verbosity Analysis
 ```bash
-# Using command line flags
-jobheist resume.pdf https://job-url \
-  --openai-key=sk-xxx \
-  --firecrawl-key=fc_xxx
-
-# Using environment variables
-export OPENAI_API_KEY=sk-xxx
-export FIRECRAWL_API_KEY=fc_xxx
-jobheist resume.pdf https://job-url
+jobheist resume.pdf job-url --verbosity=high --reasoning=detailed
 ```
+*Produces more detailed explanations and reasoning steps*
 
-### Global Installation
+### Different AI Models
 ```bash
-# Install globally
-npm install -g jobheist
-
-# Use anywhere
-jobheist resume.pdf https://job-url
-
-# Set up global config
-echo "OPENAI_API_KEY=sk-xxx" >> ~/.jobheistrc
-echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheistrc
-chmod 600 ~/.jobheistrc
+jobheist resume.pdf job-url --model=gpt-5 --verbosity=medium
 ```
+*Uses GPT-5 for more sophisticated analysis*
+
+### Fresh Data (Skip Cache)
+```bash
+jobheist resume.pdf job-url --fresh
+```
+*Fetches the latest job posting data*
 
 ## Integration Examples
 
-### With Express.js
-```typescript
-import express from 'express'
-import { ats } from 'jobheist'
-
-const app = express()
-
-app.post('/analyze', async (req, res) => {
-  try {
-    const { resumePath, jobUrl } = req.body
-    const result = await ats(resumePath, jobUrl, { format: 'json' })
-    res.json(JSON.parse(result))
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-})
+### CI/CD Pipeline
+```yaml
+# .github/workflows/ats-check.yml
+- name: ATS Analysis
+  run: |
+    npx jobheist resume.pdf ${{ github.event.inputs.job_url }} --format=json > ats-report.json
+    # Process JSON output for automated checks
 ```
 
-### With Next.js API Route
+### Automated Resume Optimization
 ```typescript
-// pages/api/analyze.ts
 import { ats } from 'jobheist'
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-  
-  try {
-    const { resumePath, jobUrl } = req.body
-    const result = await ats(resumePath, jobUrl)
-    res.json({ result })
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
+const analysis = await ats('resume.pdf', jobUrl, { format: 'json' })
+const score = JSON.parse(analysis).score
+
+if (score < 70) {
+  console.log('Resume needs optimization before applying')
+  // Trigger optimization workflow
 }
 ```
 
-### With React Hook
-```typescript
-import { useState, useCallback } from 'react'
-import { atsStream } from 'jobheist'
+---
 
-export function useATS() {
-  const [progress, setProgress] = useState('')
-  const [result, setResult] = useState('')
-  const [loading, setLoading] = useState(false)
-  
-  const analyze = useCallback(async (resumePath: string, jobUrl: string) => {
-    setLoading(true)
-    setProgress('')
-    setResult('')
-    
-    try {
-      const analysis = await atsStream(resumePath, jobUrl, {
-        onProgress: (update) => {
-          setProgress(update.phase)
-        }
-      })
-      setResult(analysis)
-    } catch (error) {
-      console.error('Analysis failed:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-  
-  return { analyze, progress, result, loading }
-}
-```
-
-## Performance Tips
-
-### Memory Management
-```typescript
-// For large files, use streaming
-const result = await atsStream('large-resume.pdf', 'https://job-url', {
-  onProgress: (progress) => {
-    // Handle progress without storing all data
-    if (progress.phase === 'complete') {
-      console.log('Analysis complete!')
-    }
-  }
-})
-```
-
-### Caching Results
-```typescript
-import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { ats } from 'jobheist'
-
-async function analyzeWithCache(resumePath: string, jobUrl: string) {
-  const cacheKey = `${resumePath}-${jobUrl}`.replace(/[^a-zA-Z0-9]/g, '-')
-  const cacheFile = `./cache/${cacheKey}.json`
-  
-  if (existsSync(cacheFile)) {
-    return JSON.parse(readFileSync(cacheFile, 'utf8'))
-  }
-  
-  const result = await ats(resumePath, jobUrl, { format: 'json' })
-  writeFileSync(cacheFile, result)
-  return JSON.parse(result)
-}
-```
+*These examples show real analysis patterns and outputs you can expect from jobheist. The actual content will vary based on your resume and the specific job posting.*

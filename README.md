@@ -38,6 +38,9 @@ jobheist resume.pdf https://example.com/job --format=xml
 # Fresh reconnaissance (skip cache)
 jobheist resume.pdf https://example.com/job --fresh
 
+# Advanced analysis options
+jobheist resume.pdf https://example.com/job --model=gpt-5 --verbosity=high --reasoning=detailed
+
 # Bring your own tools (API keys)
 jobheist resume.pdf https://example.com/job \
   --firecrawl-key=fc_xxx \
@@ -81,81 +84,23 @@ jobheist resume.pdf https://job-url \
 
 Priority order: CLI flags > env vars > .env > ~/.jobheistrc
 
-## Inside the Job
+## Programmatic Usage
 
 ```typescript
 import { ats, atsStream } from 'jobheist'
 
-// Simple heist
+// Simple analysis
 const score = await ats('resume.pdf', 'https://example.com/job')
 
-// Live updates during the heist
+// With progress tracking
 await atsStream('resume.pdf', 'https://example.com/job', {
   onProgress: (update) => {
-    if (update.phase === 'scoring') {
-      console.log(`Score: ${update.data?.score}/100`)
-    }
+    console.log(`Phase: ${update.phase}`)
   }
 })
 ```
 
-## Progress Tracking
-
-The `atsStream` function provides real-time progress updates through the `onProgress` callback. Track the analysis phases as they happen:
-
-```typescript
-await atsStream('resume.pdf', 'https://job-url', {
-  onProgress: (progress) => {
-    switch (progress.phase) {
-      case 'parsing':
-        console.log('⏳ Parsing resume...')
-        break
-      case 'parsed':
-        console.log(`✅ Parsed: ${progress.data?.name}`)
-        break
-      case 'scraping':
-        console.log('⏳ Fetching job posting...')
-        break
-      case 'scraped':
-        console.log(`✅ Job: ${progress.data?.title} at ${progress.data?.company}`)
-        break
-      case 'analyzing':
-        console.log('⏳ Analyzing compatibility...')
-        break
-      case 'reasoning':
-        // Stream AI reasoning (markdown only)
-        process.stderr.write(progress.data?.text || '')
-        break
-      case 'generating':
-        // Stream final report (markdown only)
-        process.stdout.write(progress.data?.text || '')
-        break
-      case 'scoring':
-        // Stream partial scores (JSON/XML only)
-        if (progress.data?.score) {
-          console.log(`Current score: ${progress.data.score}/100`)
-        }
-        break
-      case 'complete':
-        console.log('✅ Analysis complete!')
-        break
-    }
-  }
-})
-```
-
-### Available Phases
-
-- **`parsing`** → **`parsed`** → **`scraping`** → **`scraped`** → **`analyzing`** → **`reasoning`** → **`generating`** → **`complete`** (Markdown)
-- **`parsing`** → **`parsed`** → **`scraping`** → **`scraped`** → **`scoring`** → **`complete`** (JSON/XML)
-
-Each phase includes relevant data (contact info, job details, streaming text, or partial scores). See the complete [Progress Phases Documentation](./docs/progress-phases.mdx) for full details and TypeScript types.
-
-## Output Formats
-
-- **Markdown** (default): Human-readable analysis with scores and suggestions
-- **JSON**: Structured data for automation and pipelines
-- **XML**: For systems that prefer angle brackets
+See the [API Reference](./docs/api-reference.mdx) for complete documentation and [Progress Phases](./docs/progress-phases.mdx) for detailed callback documentation.
 
 ## The Crew
 
@@ -164,209 +109,15 @@ Each phase includes relevant data (contact info, job details, streaming text, or
 - **AI Analyzer**: [Vercel AI SDK](https://ai-sdk.dev/) + GPT-5-mini provides intelligent matching and recommendations
 - **Score System**: 0-100 rating of your match probability
 
-## Example
-```bash
-❯ pnpm jobheist ./micahrich-resume-1.8.1.pdf https://vercel.com/careers/dx-engineer-education-us-5594622004
+## Example Output
 
-> jobheist@1.0.0 jobheist /Users/micahbrich/ats
-> tsx cli.ts ./micahrich-resume-1.8.1.pdf https://vercel.com/careers/dx-engineer-education-us-5594622004
-
-⏳ Parsing resume...
-⏳ Fetching job posting...
-⏳ Analyzing compatibility...
-**Analyzing ATS compatibility**
-
-I need to perform an ATS compatibility analysis, considering how ATS behaves. I’ll highlight necessary skills such as over eight years of experience building production web applications, especially with React and Next.js, alongside a strong background in educational infrastructure and technical writing. 
-
-The resume shows extensive experience in developing educational content and teaching, like roles at General Assembly, which grew subscribers significantly. The keywords related to skills like Next.js and Vercel seem well covered.**Evaluating keyword matches**
-
-I need to analyze exact keyword matches versus variations. The job specifically asks for "React" and "Next.js," which I see in the resume. It mentions "Next.js" explicitly and has "React" in the technical skills. 
-
-However, to align better with the requirement of "8+ years building production web applications with React/Next.js," I should clearly state that on the resume. ATS may not pick up narrative details easily, so adding "8+ years" near the top or in the summary would be a good idea. I'll suggest phrases like "8+ years building production web applications with React and Next.js."**Assessing educational experience**
-
-I need to focus on education at scale, as the job requires courses, content platforms, or learning programs that reach thousands. The resume mentions achievements like "35,000+ subscribers" and "curriculum reaching millions globally," which is fantastic. 
-
-However, ATS might look for specific phrases like "developer education," "training," or "learning platform." While these terms are in the resume, they might not be exact matches. I should add a line saying, “Proven track record creating developer education at scale (courses, platforms, programs) reaching thousands.” 
-
-For engineering skills, I need keywords like "CLI," "APIs," and "CMS." The resume mentions technical modernization and content development but lacks the exact terms.**Enhancing keyword specificity**
-
-I need to add explicit phrases like "built CLIs," "built APIs," "built/maintained CMS," and "git-like CMS" for better keyword alignment. 
-
-Regarding "exceptional technical writing," the resume does have terms related to that, but maybe adding the exact phrase could be beneficial. I should also include "make complex concepts accessible." 
-
-For self-direction, using "self-directed" or "extreme ownership" would fit the culture fit aspect, though ATS may not prioritize it. I should definitely add the phrase "self-directed."
-
-Additionally, I need to emphasize "passion for empowering developers" and note ideas around the future of technical education. I’ll calculate a realistic pass probability, considering the resume is strong, but may lack the explicit "8+ years" phrase, and specific mentions of "CLI," "APIs," and "CMS."**Estimating ATS pass probability**
-
-I’d estimate a high probability of about 75-85% for passing the ATS keyword filter, but I need to quantify it more accurately. While the resume includes many necessary keywords like React, Next.js, and technical writing, it lacks the explicit "8+ years," which could lower the score slightly. 
-
-Overall, I think an **82%** compatibility score is fair. I should provide a breakdown of matched versus missing keywords, suggesting exact phrases to add (like `8+ years`) and where to place them. 
-
-It’s also useful to present a table showing exact matches versus near-misses for terms like "React" and "developer education at scale." This way, I can ensure the resume meets ATS expectations effectively.
-📝 Generating report...
-```
-
-```markdown
-✅ Analysis complete!
-
-# ATS Compatibility Analysis — DX Engineer, Education at Vercel
-
-**Compatibility score: 82% (Strong match, with a few targeted fixes to push to 95%+)**
-
-Quick summary: Micah's resume already hits the highest-value ATS signals for this role — long, relevant experience, explicit mention of **Next.js**, **React**, **Vercel**, curriculum design, large-scale education platforms, and technical writing. The main gaps are a few exact-phrase matches employers/ATS often look for (explicit `8+ years` phrasing, `CLI` / `APIs` / `CMS` keywords, and common token variations like `React.js`). Add 6–10 exact phrases lower in the resume (summary, skills, and experience bullets) and the resume will satisfy near-all real-world ATS filters for required skills.
-
----
-
-## 1) What ATS actually filters on (realistic priority)
-
-- High priority (likeliest to be ATS filters)
-  - **Exact named technologies and tools**: `React`, `Next.js`, `Vercel`, `TypeScript`, `SWR`, `Supabase`, etc.
-  - **Certs / degree keywords** when required (not relevant here).
-  - **Quantified experience tokens** such as `8+ years`, `10 years`, `15+ years` (some ATS search for numeric patterns).
-  - **Specific role phrases** like `developer education`, `curriculum development`, `technical writing`.
-  - **Infrastructure keywords** when asked: `CLI`, `API`, `content management system`, `CMS`, `git-like CMS`, `platform engineering`.
-
-- Medium priority
-  - Years-of-experience lines like `15+ years` (useful but may not satisfy a search for `8+ years` depending on ATS logic).
-  - Phrases like `built production web applications` (strong when present, medium when unquantified).
-
-- Low priority / fluff (rarely filtered)
-  - Soft adjectives: `innovative`, `polished`, `extreme ownership` (cultural but not used reliably by ATS).
-  - High-level mission statements unless they contain target keywords.
-
-> Key insight: ATSs are literal. They match tokens and common numeric patterns. Use the exact strings the job posts use (or common variants) in clear fields (summary, skills, experience bullets).
-
----
-
-## 2) Exact matches vs near-misses (critical terms from the job)
-
-| Job required term | Resume has exact match? | Notes / improvement |
-|---|---:|---|
-| `React` | **Yes** | Present in bullets and Skills. Good. Add `React.js` variant for safety. |
-| `Next.js` | **Yes (exact)** | Appears multiple times (strong). |
-| `8+ years` (building production web applications) | **Near-miss** | Resume states `15+ years` in summary — strong, but ATS sometimes looks for the literal `8+ years`. Add an explicit `8+ years building production web applications with React and Next.js`. |
-| `Proven track record creating developer education at scale` | **Yes (strong)** | Resume shows `35,000+ subscribers` and `reaching millions`. Add an explicit phrase with `courses`, `content platforms`, or `learning programs` wording used in job. |
-| `Engineering skills to build and maintain educational infrastructure (CLIs, APIs, CMS)` | **Near-miss** | Resume mentions platforms, CI/CD, infrastructure, and "content development", but **does not** explicitly list `CLI`, `CLI tools`, `APIs`, or `CMS` keywords. Add exact tokens. |
-| `Exceptional technical writing` | **Yes** | `Technical writing`, `documentation systems`, curriculum details present. Consider adding “exceptional” or a concrete example (link to docs or sample). |
-| `git-like CMS` | **No / Near-miss** | Job mentions custom `git-like CMS`. Resume does not. Add `git-like CMS` or `git-backed CMS` if accurate. |
-| `Self-directed / extreme ownership` | **No (soft)** | Soft but job-listed; add `self-directed` or `extreme ownership` in summary or tagline. |
-| `Passion for empowering developers` | **Near-match** | Has “developer education” and community growth. Add explicit `passion for empowering developers` phrase. |
-
-> Warning: A resume that *implies* the skills may still be passed over by a literal ATS filter. Add exact tokens in short phrases to ensure the automated scan passes.
-
----
-
-## 3) Realistic pass probability (based on real ATS behavior)
-
-- Likelihood to pass an ATS that requires all listed “Must-Have” keywords as tokens: **~82%**
-  - Reason: core technical tokens (`React`, `Next.js`, `Vercel`, `TypeScript`, curriculum experience, scale metrics) are present and numerically persuasive. Missing precise tokens like `CLIs`, `APIs`, `CMS`, `git-like CMS`, and the literal `8+ years` phrasing reduce certainty.
-- Likelihood to pass a stricter boolean ATS that requires exact phrase matches (e.g., `8+ years` AND `CLI` AND `git-like CMS`): **~55–65%**
-  - Reason: near-misses create failure points in strict boolean AND searches.
-- After implementing the specific edits below, estimated pass probability rises to **~95%+** for typical ATS boolean searches used by tech companies.
-
----
-
-## 4) Specific, actionable edits — exact phrases to add (copy-paste)
-
-Add these exact phrases (use backticks as shown). Place them exactly where suggested.
-
-### Add to the top Summary / Professional Title (first 1–2 lines)
-- Add a one-line tag under your name or at the start of summary:
-  - `8+ years building production web applications with React and Next.js`
-  - `Developer education leader — created courses and learning platforms reaching 35,000+ and millions globally`
-
-Example (single-line summary):
-- `8+ years building production web applications with React and Next.js · Developer education leader creating courses & platforms reaching 35,000+ and millions globally`
-
-### Add to Technical Skills & Architecture (skills list)
-- Append these tokens to that section (comma-separated or each on its own line):
-  - `React.js`
-  - `React` (already present; keep)
-  - `Next.js` (already present; keep)
-  - `CLIs / CLI tools`
-  - `APIs`
-  - `Content Management System (CMS)` or `git-like CMS` (if you built one)
-  - `Git-backed CMS` or `git-like CMS` (use whichever is accurate)
-
-Example snippet:
-- `Next.js • React • React.js • React Server Components • TypeScript • Vercel • CLIs / CLI tools • APIs • Content Management System (CMS) • git-like CMS • Supabase/Postgres • AI SDKs • WebSockets/Realtime • Tailwind`
-
-### Add to Teaching & Education or a separate “Education Platform Experience” bullet
-- Insert an explicit line:
-  - `Proven track record creating developer education at scale: courses, content platforms, and learning programs reaching 35,000+ subscribers and millions of learners`
-- Or the shorter token (ATS-friendly):
-  - `developer education at scale` (as a phrase)
-
-### Add to Wildebeest or Citizen bullets (concrete engineering + education infra)
-- For Wildebeest (existing bullet):
-  - Add: `Built and maintained CLIs, REST and GraphQL APIs, and a git-like CMS for educational content and developer tooling`
-  - `Led development of learning platform infrastructure (CI/CD, API backends, content management system) hosted on Vercel`
-- For Citizen (where Next.js is mentioned):
-  - Add: `Implemented production Next.js apps, including API endpoints, deployable CLIs, and content management workflows`
-
-Exact lines to paste:
-- `Built and maintained CLIs, REST and GraphQL APIs, and a git-like CMS for educational content and developer tooling`
-- `Led development of learning platform infrastructure (CI/CD, API backends, content management system) hosted on Vercel`
-
-### Add to General Assembly / Curriculum bullets (technical writing & scale)
-- Insert an explicit education-scale phrasing:
-  - `Created comprehensive curriculum (110K+ words; 365K+ lines of code) and produced course materials that scaled across 14 markets, reaching thousands of learners`
-- Add a technical writing assertion:
-  - `Exceptional technical writing: authored instructor guides, reference docs, and hands-on labs used by hundreds of instructors`
-
-Exact lines:
-- `Created comprehensive curriculum (110K+ words; 365K+ lines of code) and produced course materials that scaled across 14 markets, reaching thousands of learners`
-- `Exceptional technical writing: authored instructor guides, API tutorials, and hands-on labs used across global programs`
-
-### Add a micro-section or one-liner linking to sample docs (if you have them)
-- Add under contact or summary:
-  - `Examples: curriculum samples and technical docs at https://micah.sh/docs` (only if accurate)
-- ATS may not parse URLs semantically, but recruiters will appreciate it.
-
-### Add soft/behavioral token (optional to match job language)
-- Add in summary or concluding bullet:
-  - `Self-directed with extreme ownership — ships independently and iterates with developer-first feedback`
-
-Exact phrase:
-- `Self-directed with extreme ownership`
-
----
-
-## 5) Minimal edits that produce the biggest ATS lift (prioritize these)
-
-- Insert `8+ years building production web applications with React and Next.js` in summary.
-- Add `CLIs`, `APIs`, `Content Management System (CMS)`, and `git-like CMS` to Technical Skills & Architecture.
-- Add `developer education at scale` + numbers (e.g., `35,000+ subscribers` / `reaching millions`) in Teaching & Education lines.
-- Add `React.js` variant to skills.
-
-These 4 changes will address the typical token checks used in ATS boolean rules and dramatically increase pass chances.
-
----
-
-## 6) Example small revised snippets to paste into the resume
-
-- Summary line (top):
-  - `8+ years building production web applications with React and Next.js · Developer education leader creating courses & platforms reaching 35,000+ subscribers and millions globally · Self-directed with extreme ownership`
-
-- Skills line additions:
-  - `CLIs / CLI tools • APIs • Content Management System (CMS) • git-like CMS • React.js`
-
-- Wildebeest bullet augmentation:
-  - `Modernized infrastructure with React, Next.js, AI/ML tools, and cloud hosting (Vercel). Built and maintained CLIs, REST/GraphQL APIs, and a git-like CMS for content platforms.`
-
-- General Assembly bullet augmentation:
-  - `Created comprehensive curriculum (110K+ words, 365K+ LOC) and instructor materials that scaled across 14 markets, reaching thousands of learners — exceptional technical writing for docs, labs, and tutorials.`
-
----
-
-## Final notes / honest takeaways
-
-> ATS systems are literal and prize exact tokens and numeric patterns. You already have most of the substantive experience Vercel wants — add a few exact phrases and tokens (not new claims, just explicit wording) and your resume will clear both ATS filters and recruiter screens.
-```
+See [example outputs](./docs/examples.mdx) for real sample analysis reports and what to expect.
 
 ## Documentation
 
 - [Complete API Documentation](./docs/) - Full reference and guides
+- [Example Outputs](./docs/examples.mdx) - Real sample analysis reports
+- [Usage Patterns](./docs/usage-patterns.mdx) - Code examples and integrations
 - [Progress Phases](./docs/progress-phases.mdx) - Detailed onProgress callback documentation
 
 ## Development
@@ -376,17 +127,7 @@ git clone https://github.com/micahbrich/jobheist.git
 cd jobheist
 pnpm install
 pnpm build
-
-# Test run
 pnpm jobheist resume.pdf https://example.com/job
-
-# Development mode
-pnpm dev
-
-# Run tests
-pnpm test:global  # Test global installation
-pnpm lint         # Type checking
-pnpm pack         # Create package tarball
 ```
 
 ## Philosophy
