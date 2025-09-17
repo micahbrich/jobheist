@@ -11,6 +11,7 @@ import { config } from 'dotenv'
 import { homedir } from 'os'
 import { join } from 'path'
 import args from 'args'
+import ms from 'ms'
 
 // Load global config if it exists (~/.jobheistrc)
 config({ path: join(homedir(), '.jobheistrc') })
@@ -23,16 +24,16 @@ const done = () => process.stderr.write('\n')
 
 // Configure args
 args
-  .option('format', 'Output format', 'markdown')
-  .option('fresh', 'Skip cache and fetch fresh data', false)
-  .option('model', 'OpenAI model string', 'gpt-5-mini')
-  .option('verbosity', 'Response verbosity', 'low')
-  .option('reasoning', 'Reasoning output', 'none')
-  .option('firecrawl-key', 'Firecrawl API key')
-  .option('openai-key', 'OpenAI API key')
+  .option(['f', 'format'], 'Output format', 'markdown')
+  .option(['a', 'max-age'], 'Cache max age (e.g., "2h", "30m", 0 for fresh)')
+  .option(['m', 'model'], 'OpenAI model string', 'gpt-5-mini')
+  .option(['v', 'verbosity'], 'Response verbosity', 'low')
+  .option(['r', 'reasoning'], 'Reasoning output', 'none')
+  .option(['F', 'firecrawl-key'], 'Firecrawl API key')
+  .option(['O', 'openai-key'], 'OpenAI API key')
   .example('jobheist resume.pdf https://jobs.example.com/posting', 'Basic usage')
   .example('jobheist resume.pdf job-url --model=gpt-5 --verbosity=high', 'High verbosity with GPT-5')
-  .example('jobheist resume.pdf job-url --reasoning=detailed --fresh', 'Detailed reasoning with fresh data')
+  .example('jobheist resume.pdf job-url --reasoning=detailed --max-age=0', 'Detailed reasoning with fresh data')
   .example('jobheist resume.pdf job-url --firecrawl-key=fc_xxx --openai-key=sk-xxx', 'With API keys')
 
 const parsed = args.parse(process.argv)
@@ -48,8 +49,8 @@ async function main() {
   }
 
   // Set API keys from CLI flags if provided
-  if (parsed['firecrawl-key']) process.env.FIRECRAWL_API_KEY = parsed['firecrawl-key']
-  if (parsed['openai-key']) process.env.OPENAI_API_KEY = parsed['openai-key']
+  if (parsed.firecrawlKey) process.env.FIRECRAWL_API_KEY = parsed.firecrawlKey
+  if (parsed.openaiKey) process.env.OPENAI_API_KEY = parsed.openaiKey
 
   // Check for required API keys
   if (!process.env.FIRECRAWL_API_KEY || !process.env.OPENAI_API_KEY) {
@@ -102,10 +103,27 @@ async function main() {
     }
   }, 80)
 
+  // Parse max-age option
+  let maxAge: number | undefined
+  if (parsed.maxAge !== undefined) {
+    if (typeof parsed.maxAge === 'number') {
+      maxAge = parsed.maxAge
+    } else if (parsed.maxAge === '0') {
+      maxAge = 0
+    } else {
+      const msResult = ms(parsed.maxAge as any)
+      if (typeof msResult !== 'number') {
+        console.error(`Invalid max-age value: ${parsed.maxAge}`)
+        process.exit(1)
+      }
+      maxAge = msResult
+    }
+  }
+
   try {
     const result = await atsStream(resume, job, {
       format: parsed.format as 'markdown' | 'json' | 'xml',
-      fresh: parsed.fresh,
+      maxAge,
       config: {
         model: parsed.model,
         verbosity: parsed.verbosity as 'low' | 'medium' | 'high',

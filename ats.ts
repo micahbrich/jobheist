@@ -163,7 +163,7 @@ async function parse(path: string): Promise<Resume> {
 }
 
 // Scrape job posting and extract structured ATS data
-async function scrape(url: string, apiKey: string, options?: { fresh?: boolean }): Promise<Job> {
+async function scrape(url: string, apiKey: string, options?: { maxAge?: number }): Promise<Job> {
   const firecrawl = new FirecrawlApp({ apiKey })
 
   // Use Firecrawl's LLM extraction for structured job data
@@ -172,7 +172,7 @@ async function scrape(url: string, apiKey: string, options?: { fresh?: boolean }
       type: 'json',
       schema: JobSchema
     }],
-    maxAge: options?.fresh ? 0 : 3600000  // 1hr cache default, 0 for fresh
+    maxAge: options?.maxAge ?? 3600000  // 1hr cache default
   })
 
   const res = result as any  // Firecrawl v2 types issue
@@ -486,7 +486,7 @@ export async function ats(
   options: {
     firecrawlKey?: string
     format?: 'json' | 'xml' | 'markdown'
-    fresh?: boolean
+    maxAge?: number
     config?: Config
     abortSignal?: AbortSignal
   } = {}
@@ -495,7 +495,7 @@ export async function ats(
   if (!firecrawlKey) throw new Error('FIRECRAWL_API_KEY required')
 
   const resume = await parse(resumePath)
-  const job = await scrape(jobUrl, firecrawlKey, { fresh: options.fresh })
+  const job = await scrape(jobUrl, firecrawlKey, { maxAge: options.maxAge })
 
   const formatType = options.format || 'markdown'
   const config = { ...defaults, ...options.config }
@@ -534,7 +534,7 @@ export async function atsStream(
   options: {
     firecrawlKey?: string
     format?: 'json' | 'xml' | 'markdown'
-    fresh?: boolean
+    maxAge?: number
     config?: Config
     onProgress?: (progress: ProgressUpdate) => void
     abortSignal?: AbortSignal
@@ -550,7 +550,7 @@ export async function atsStream(
 
   // Scrape job
   options.onProgress?.({ phase: 'scraping' })
-  const job = await scrape(jobUrl, firecrawlKey, { fresh: options.fresh })
+  const job = await scrape(jobUrl, firecrawlKey, { maxAge: options.maxAge })
   options.onProgress?.({ phase: 'scraped', data: { title: job.title, company: job.company } })
 
   const formatType = options.format || 'markdown'

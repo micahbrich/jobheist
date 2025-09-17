@@ -26,6 +26,9 @@ importers:
       jstoxml:
         specifier: ^7.0.1
         version: 7.0.1
+      ms:
+        specifier: ^2.1.3
+        version: 2.1.3
       pdfjs-dist:
         specifier: ^5.4.149
         version: 5.4.149
@@ -39,6 +42,9 @@ importers:
       '@types/jstoxml':
         specifier: ^5.0.0
         version: 5.0.0
+      '@types/ms':
+        specifier: ^2.1.0
+        version: 2.1.0
       '@types/node':
         specifier: ^24.3.1
         version: 24.3.1
@@ -328,6 +334,9 @@ packages:
   '@types/jstoxml@5.0.0':
     resolution: {integrity: sha512-6W1oNiZ/frqtloQdjRm+UtZ0jioU4SMX7iU0OWistGQsr5nrrrhNs82O3Wa8csWKttCBifJTe+CDLFyzNkIOLQ==}
 
+  '@types/ms@2.1.0':
+    resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
+
   '@types/node@24.3.1':
     resolution: {integrity: sha512-3vXmQDXy+woz+gnrTvuvNrPzekOi+Ds0ReMxw0LzBiK3a+1k0kQn9f2NWk+lgD4rJehFUmYy2gMhJ2ZI+7YP9g==}
 
@@ -562,6 +571,9 @@ packages:
   mri@1.1.4:
     resolution: {integrity: sha512-6y7IjGPm8AzlvoUrwAaw1tLnUBudaS3752vcd8JtrpGGQn+rXIe63LFVHm/YMwtqAuh+LJPCFdlLYPWM1nYn6w==}
     engines: {node: '>=4'}
+
+  ms@2.1.3:
+    resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
@@ -840,6 +852,8 @@ snapshots:
 
   '@types/jstoxml@5.0.0': {}
 
+  '@types/ms@2.1.0': {}
+
   '@types/node@24.3.1':
     dependencies:
       undici-types: 7.10.0
@@ -1082,6 +1096,8 @@ snapshots:
   minipass@7.1.2: {}
 
   mri@1.1.4: {}
+
+  ms@2.1.3: {}
 
   package-json-from-dist@1.0.1: {}
 

@@ -18,7 +18,7 @@ function ats(
   options?: {
     firecrawlKey?: string
     format?: 'json' | 'xml' | 'markdown'
-    fresh?: boolean
+    maxAge?: number
   }
 ): Promise<string>
 ```
@@ -36,7 +36,7 @@ import { ats } from 'jobheist'
 
 const result = await ats('resume.pdf', 'https://example.com/job', {
   format: 'json',
-  fresh: true
+  maxAge: 0
 })
 ```
 
@@ -51,7 +51,7 @@ function atsStream(
   options?: {
     firecrawlKey?: string
     format?: 'json' | 'xml' | 'markdown'
-    fresh?: boolean
+    maxAge?: number
     onProgress?: (progress: ProgressUpdate) => void
   }
 ): Promise<string>
@@ -233,12 +233,13 @@ Output format for analysis results.
 - `'json'` - Structured JSON data
 - `'xml'` - XML format
 
-### `fresh`
+### `maxAge`
 
-Skip cache and fetch fresh job data.
+Cache max age in milliseconds. Controls how old cached data can be before re-fetching.
 
-- `false` (default) - Use cached data when available
-- `true` - Always fetch fresh data
+- `undefined` (default) - Use Firecrawl default (1 hour)
+- `0` - Always fetch fresh data
+- `number` - Max age in milliseconds (e.g., `3600000` for 1 hour)
 
 ### `firecrawlKey`
 

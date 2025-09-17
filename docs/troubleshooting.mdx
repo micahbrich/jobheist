@@ -49,7 +49,7 @@ description: Common issues and solutions for jobheist
 
 **Solutions:**
 - Verify the job URL is accessible in a browser
-- Try with `--fresh` flag to bypass cache
+- Try with `--max-age=0` to bypass cache
 - Check if the job posting requires authentication
 - Ensure the URL is a direct link to the job posting, not a search results page
 
@@ -59,7 +59,7 @@ description: Common issues and solutions for jobheist
 
 **Solutions:**
 - Check your internet connection
-- Try again with `--fresh` flag
+- Try again with `--max-age=0`
 - Verify API keys are valid and have sufficient credits
 - Check if your network blocks the required services
 
@@ -90,7 +90,7 @@ This will show detailed information about the analysis process.
 - Consider splitting very large resumes into smaller sections
 
 ### For Slow Networks
-- Use the `--fresh` flag sparingly (it bypasses cache)
+- Use `--max-age=0` sparingly (it bypasses cache)
 - Consider running during off-peak hours
 
 ### For Batch Processing
@@ -121,5 +121,5 @@ If you're still having issues:
 | `FIRECRAWL_API_KEY required` | Missing Firecrawl API key | Set API key via env var or config |
 | `OPENAI_API_KEY required` | Missing OpenAI API key | Set API key via env var or config |
 | `Failed to parse PDF` | PDF parsing error | Check PDF format and accessibility |
-| `Failed to scrape job posting` | Job scraping error | Verify URL and try with --fresh |
+| `Failed to scrape job posting` | Job scraping error | Verify URL and try with --max-age=0 |
 | `Generation failed` | AI analysis error | Check API keys and try again |

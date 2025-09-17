@@ -1,101 +1,132 @@
-# jobheist 🎯
+# jobheist 💼
 
 [![npm version](https://img.shields.io/npm/v/jobheist.svg)](https://www.npmjs.com/package/jobheist)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![npm downloads](https://img.shields.io/npm/dm/jobheist.svg)](https://www.npmjs.com/package/jobheist)
 
-> Plan the perfect job heist. Outsmart ATS filters. Land the interview.
+> **They're using AI to screen you out. Use AI to get in.**
 
-## The Score
+## The Game Has Changed
 
-Every job application is a heist. The ATS (Applicant Tracking System) is the vault, your resume is your crew, and that dream job? That's the prize.
+Remember when getting a job was about being qualified? Now it's about gaming an algorithm.
 
-**jobheist** cases the joint for you - analyzing how well your resume matches the job posting, identifying what keywords you're missing, and scoring your chances of making it past the automated guards.
+Whether it's a startup or Fortune 500, companies use ATS to search and rank resumes. These systems don't reject you — they make you invisible. Wrong keywords = buried in their database while less qualified but better-optimized resumes rise to the top.
 
-Built with [Firecrawl](https://firecrawl.com) for lightning-fast job scraping and OpenAI's latest reasoning models for intelligent analysis. The entire codebase is just 2 files (~850 lines) because the best heists are simple.
+**jobheist** is your inside edge. It analyzes your resume against any job posting, shows you exactly what the ATS is looking for, and tells you what's missing. Consider it reconnaissance—knowing exactly what they're looking for before you make your move.
+
+**Time to even the odds.**
+
+## How It Works
+
+```bash
+jobheist resume.pdf https://dream-company.com/perfect-role
+
+# In seconds, you'll know:
+# ✓ Your ATS compatibility score (0-100)
+# ✓ Keywords you're missing
+# ✓ Skills they want that you haven't mentioned
+# ✓ Specific suggestions to improve your match
+```
+
+Powered by [Firecrawl](https://firecrawl.com)'s intelligent scraping and OpenAI's latest models. Just 2 files, ~850 lines—because the best tools don't need to be complicated.
 
 ## Quick Start
 
 ```bash
-# The easy way (once published)
+# One-time play
 npx jobheist resume.pdf https://jobs.example.com/posting
 
-# Or install globally
+# Or keep it in your arsenal
 npm install -g jobheist
 jobheist resume.pdf https://dream-company.com/perfect-role
 ```
 
-## The Plan
+## The Intel
+
+You wouldn't rob a bank without casing it first. **jobheist** gives you:
+
+- **Match Score** — Your probability of passing the ATS filter (0-100)
+- **Missing Keywords** — The exact terms they're scanning for that you don't have
+- **Skill Gaps** — Technologies and competencies to add (if you have them)
+- **Strategic Recommendations** — Specific changes to improve your odds
+- **Confidence Indicators** — How certain we are about each finding
+
+## Command Reference
 
 ```bash
-# Case the joint - analyze compatibility
+# Standard analysis
 jobheist resume.pdf https://example.com/job
 
-# Get the intel in different formats
+# Export the intelligence (for tracking multiple applications)
 jobheist resume.pdf https://example.com/job --format=json
 jobheist resume.pdf https://example.com/job --format=xml
 
-# Fresh reconnaissance (skip cache)
-jobheist resume.pdf https://example.com/job --fresh
+# Fresh analysis (bypass cache)
+jobheist resume.pdf https://example.com/job --max-age=0
 
-# Advanced analysis options
+# Advanced operations
 jobheist resume.pdf https://example.com/job --model=gpt-5 --verbosity=high
 
-# Show AI reasoning process (hidden by default)
+# See the AI's reasoning (understand the analysis)
 jobheist resume.pdf https://example.com/job --reasoning=auto
 
-# Bring your own tools (API keys)
+# BYO credentials
 jobheist resume.pdf https://example.com/job \
   --firecrawl-key=fc_xxx \
   --openai-key=sk-xxx
 ```
 
-## Your Toolkit
+## Setup
 
-### Setting Up API Keys
+### API Keys
 
-jobheist needs two API keys to work. You can set them up in multiple ways:
+You'll need two keys for this operation:
+- **OpenAI** — For the analysis engine ([Get one here](https://platform.openai.com/api-keys))
+- **Firecrawl** — For job scraping ([Get one here](https://firecrawl.com))
 
-**Option 1: Global config (recommended for global install)**
+Configure them however suits your style:
+
+**The Mastermind** (Global Config)
 ```bash
-# One-time setup — keys available everywhere
+# Set once, use everywhere
 echo "OPENAI_API_KEY=sk-xxx" >> ~/.jobheistrc
 echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheistrc
-chmod 600 ~/.jobheistrc
+chmod 600 ~/.jobheistrc  # Keep it secure
 ```
-> `~/.jobheistrc` is an `.env`-style file, so comments and simple `KEY=VALUE` lines work great.
 
-**Option 2: Environment variables**
+**The Ghost** (Environment Variables)
 ```bash
 export OPENAI_API_KEY=sk-xxx
 export FIRECRAWL_API_KEY=fc_xxx
 ```
 
-**Option 3: Local .env file**
+**The Planner** (Local .env)
 ```bash
 # In your project directory
-OPENAI_API_KEY=sk-xxx
-FIRECRAWL_API_KEY=fc_xxx
+echo "OPENAI_API_KEY=sk-xxx" >> .env
+echo "FIRECRAWL_API_KEY=fc_xxx" >> .env
 ```
 
-**Option 4: Command line flags**
+**The Freelancer** (CLI Flags)
 ```bash
 jobheist resume.pdf https://job-url \
   --openai-key=sk-xxx \
   --firecrawl-key=fc_xxx
 ```
 
-Priority order: CLI flags > env vars > .env > ~/.jobheistrc
+> **Note**: Priority order is CLI flags → env vars → .env → ~/.jobheistrc
 
-## Programmatic Usage
+## For Developers
+
+Building your own crew? Here's how to integrate:
 
 ```typescript
 import { ats, atsStream } from 'jobheist'
 
-// Simple analysis
+// Quick analysis
 const score = await ats('resume.pdf', 'https://example.com/job')
 
-// With progress tracking
+// Real-time progress tracking
 await atsStream('resume.pdf', 'https://example.com/job', {
   onProgress: (update) => {
     console.log(`Phase: ${update.phase}`)
@@ -105,12 +136,14 @@ await atsStream('resume.pdf', 'https://example.com/job', {
 
 See the [API Reference](./docs/api-reference.mdx) for complete documentation and [Progress Phases](./docs/progress-phases.mdx) for detailed callback documentation.
 
-## The Crew
+## Under the Hood
 
-- **PDF Parser**: Extracts text from your resume using Mozilla's pdfjs-dist
-- **Job Scraper**: [Firecrawl](https://www.firecrawl.dev) grabs structured job data in seconds
-- **AI Analyzer**: [Vercel AI SDK](https://ai-sdk.dev/) + GPT-5-mini provides intelligent matching and recommendations
-- **Score System**: 0-100 rating of your match probability
+**jobheist** assembles a precision team:
+
+- **PDF Parser** — Mozilla's pdfjs-dist extracts your resume text perfectly
+- **Job Intel** — [Firecrawl](https://www.firecrawl.dev) scrapes and structures job postings in seconds
+- **Analysis Engine** — [Vercel AI SDK](https://ai-sdk.dev/) + OpenAI for intelligent pattern matching
+- **Scoring Algorithm** — Transparent 0-100 scoring based on keyword matches, skill alignment, and requirement coverage
 
 ## Example Output
 
@@ -146,4 +179,6 @@ MIT - Use it, fork it, improve it. Help others pull off the perfect job heist.
 
 ---
 
-*Remember: The best heist is the one where everyone wins. You get the job, the company gets a great hire.*
+*The perfect heist? Everyone wins. You land the job. They find their person. The algorithm never saw it coming.*
+
+*Built by [@micahbrich](https://x.com/micahbrich) • Open to new opportunities*
