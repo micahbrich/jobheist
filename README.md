@@ -325,6 +325,11 @@ pnpm jobheist resume.pdf https://example.com/job
 
 # Development mode
 pnpm dev
+
+# Run tests
+pnpm test:global  # Test global installation
+pnpm lint         # Type checking
+pnpm pack         # Create package tarball
 ```
 
 ## Philosophy

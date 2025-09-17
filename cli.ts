@@ -5,7 +5,7 @@
  * Plan the perfect job heist
  */
 
-import { atsStream } from './ats'
+import { atsStream } from './ats.js'
 import 'dotenv/config'
 import { readFileSync, existsSync } from 'fs'
 import { homedir } from 'os'
@@ -128,11 +128,11 @@ Configuration priority (highest to lowest):
   1. Command line flags (--openai-key, --firecrawl-key)
   2. Environment variables
   3. .env file in current directory
-  4. ~/.jobheist global config file
+  4. ~/.jobheistrc global config file
 
 Setting up global config:
-  echo "OPENAI_API_KEY=sk-xxx" >> ~/.jobheist
-  echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheist
+  echo "OPENAI_API_KEY=sk-xxx" >> ~/.jobheistrc
+  echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheistrc
 `)
 }
 
@@ -166,7 +166,7 @@ async function main() {
     console.error('  1. Command line: --firecrawl-key=fc_xxx')
     console.error('  2. Environment: export FIRECRAWL_API_KEY=fc_xxx')
     console.error('  3. Local .env file')
-    console.error('  4. Global config: echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheist')
+    console.error('  4. Global config: echo "FIRECRAWL_API_KEY=fc_xxx" >> ~/.jobheistrc')
     process.exit(1)
   }
   if (!process.env.OPENAI_API_KEY) {
@@ -175,7 +175,7 @@ async function main() {
     console.error('  1. Command line: --openai-key=sk-xxx')
     console.error('  2. Environment: export OPENAI_API_KEY=sk-xxx')
     console.error('  3. Local .env file')
-    console.error('  4. Global config: echo "OPENAI_API_KEY=sk-xxx" >> ~/.jobheist')
+    console.error('  4. Global config: echo "OPENAI_API_KEY=sk-xxx" >> ~/.jobheistrc')
     process.exit(1)
   }
 

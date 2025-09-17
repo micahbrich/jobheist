@@ -10,7 +10,16 @@
   "scripts": {
     "jobheist": "tsx cli.ts",
     "build": "tsc",
-    "dev": "tsx --watch cli.ts"
+    "dev": "tsx --watch cli.ts",
+    "clean": "rm -rf dist",
+    "prebuild": "pnpm clean",
+    "prepublishOnly": "pnpm build",
+    "lint": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"No tests yet\" && exit 0",
+    "test:global": "pnpm build && npm install -g . && jobheist --help && npm uninstall -g jobheist",
+    "pack": "pnpm build && npm pack",
+    "prepack": "pnpm build"
   },
   "keywords": [
     "ats",
