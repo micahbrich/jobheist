@@ -4,6 +4,7 @@
  */
 
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { createRequire } from 'module'
 import { streamObject, generateObject, streamText, smoothStream } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import FirecrawlApp from '@mendable/firecrawl-js'
@@ -11,6 +12,14 @@ import { z } from 'zod'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { toXML } from 'jstoxml'
+
+// Resolve the pdf.js worker to a stable path for both CLI and SSR builds.
+const require = createRequire(import.meta.url)
+const pdfWorkerSrc = require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs')
+
+if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
+}
 
 
 // Simple interfaces - no over-engineering
