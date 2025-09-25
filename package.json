@@ -1,6 +1,6 @@
 {
   "name": "jobheist",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Plan the perfect job heist - outsmart ATS filters with AI-powered resume analysis",
   "main": "dist/ats.js",
   "types": "dist/ats.d.ts",
