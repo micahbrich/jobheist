@@ -146,11 +146,11 @@ See the [API Reference](./docs/api-reference.mdx) for complete documentation and
 - **Scoring Algorithm** — Transparent 0-100 scoring based on keyword matches, skill alignment, and requirement coverage
 
 ## Releases (How to bump & publish)
-- Patch: `pnpm version patch && git push --follow-tags`
-- Minor: `pnpm version minor && git push --follow-tags`
-- Major: `pnpm version major && git push --follow-tags`
+- Patch: `pnpm release` (1.1.7 → 1.1.8)
+- Minor: `pnpm release:minor` (1.1.7 → 1.2.0)
+- Major: `pnpm release:major` (1.1.7 → 2.0.0)
 
-Pushing a tag like `v1.2.3` triggers CI to build and publish to npm.
+Each command bumps version, tags, and pushes to trigger CI publish to npm.
 
 ## Example Output
 

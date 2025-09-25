@@ -35,7 +35,10 @@
     "test": "echo \"No tests yet\" && exit 0",
     "test:global": "pnpm build && npm install -g . && jobheist --help && npm uninstall -g jobheist",
     "pack": "pnpm build && npm pack",
-    "prepack": "pnpm build"
+    "prepack": "pnpm build",
+    "release": "pnpm version patch && git push --follow-tags",
+    "release:minor": "pnpm version minor && git push --follow-tags",
+    "release:major": "pnpm version major && git push --follow-tags"
   },
   "keywords": [
     "ats",
