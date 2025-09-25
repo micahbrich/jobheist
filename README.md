@@ -145,6 +145,13 @@ See the [API Reference](./docs/api-reference.mdx) for complete documentation and
 - **Analysis Engine** — [Vercel AI SDK](https://ai-sdk.dev/) + OpenAI for intelligent pattern matching
 - **Scoring Algorithm** — Transparent 0-100 scoring based on keyword matches, skill alignment, and requirement coverage
 
+## Releases (How to bump & publish)
+- Patch: `pnpm version patch && git push --follow-tags`
+- Minor: `pnpm version minor && git push --follow-tags`
+- Major: `pnpm version major && git push --follow-tags`
+
+Pushing a tag like `v1.2.3` triggers CI to build and publish to npm.
+
 ## Example Output
 
 See [example outputs](./docs/examples.mdx) for real sample analysis reports and what to expect.
