@@ -68,18 +68,21 @@ interface Score {
       keyword: string
       jobFrequency: number
       resumeFrequency: number
+      evidence?: Evidence[]
     }>
     underRepresented: Array<{
       keyword: string
       jobFrequency: number
       resumeFrequency: number
       suggestion: string
+      evidence?: Evidence[]
     }>
     notFound: Array<{
       keyword: string
       jobFrequency: number
       impact: number
       suggestion: string
+      evidence?: Evidence[]
     }>
   }
   suggestions: Array<{
@@ -89,6 +92,7 @@ interface Score {
     suggested: string
     impact: number
     rationale: string
+    evidence?: Evidence[]
   }>
   analysis: {
     topPriorities: string[]
@@ -99,6 +103,13 @@ interface Score {
   optimizations: string[]
 }
 
+// Evidence used to support claims/suggestions with verbatim pullquotes
+interface Evidence {
+  source: 'job' | 'resume'
+  quote: string
+  section?: string
+}
+
 // Zod schema for AI scoring
 const ScoreSchema = z.object({
   score: z.number().min(0).max(100),
@@ -106,19 +117,34 @@ const ScoreSchema = z.object({
     strongMatches: z.array(z.object({
       keyword: z.string(),
       jobFrequency: z.number(),
-      resumeFrequency: z.number()
+      resumeFrequency: z.number(),
+      evidence: z.array(z.object({
+        source: z.enum(['job', 'resume']),
+        quote: z.string(),
+        section: z.string().optional()
+      })).optional()
     })),
     underRepresented: z.array(z.object({
       keyword: z.string(),
       jobFrequency: z.number(),
       resumeFrequency: z.number(),
-      suggestion: z.string()
+      suggestion: z.string(),
+      evidence: z.array(z.object({
+        source: z.enum(['job', 'resume']),
+        quote: z.string(),
+        section: z.string().optional()
+      })).optional()
     })),
     notFound: z.array(z.object({
       keyword: z.string(),
       jobFrequency: z.number(),
       impact: z.number(),
-      suggestion: z.string()
+      suggestion: z.string(),
+      evidence: z.array(z.object({
+        source: z.enum(['job', 'resume']),
+        quote: z.string(),
+        section: z.string().optional()
+      })).optional()
     }))
   }),
   suggestions: z.array(z.object({
@@ -127,7 +153,12 @@ const ScoreSchema = z.object({
     current: z.string().optional(),
     suggested: z.string(),
     impact: z.number(),
-    rationale: z.string()
+    rationale: z.string(),
+    evidence: z.array(z.object({
+      source: z.enum(['job', 'resume']),
+      quote: z.string(),
+      section: z.string().optional()
+    })).optional()
   })),
   analysis: z.object({
     topPriorities: z.array(z.string()),
@@ -262,6 +293,7 @@ Analyze this resume's ATS compatibility by:
 2. Checking for exact matches vs near-misses (e.g., "React" vs "React.js")
 3. Calculating realistic pass probability based on ACTUAL ATS behavior
 4. Providing specific, actionable improvements with EXACT phrases to add
+5. For each important keyword finding and each recommendation, include 1-2 verbatim pullquotes FROM THE JOB POSTING that justify the reasoning. Place these immediately below the point they support as a blockquote starting with "From job" and, if known, include the section name in brackets (e.g., [Qualifications]). Quotes must be exact substrings from the job posting, not paraphrases.
 
 Output natural, helpful markdown that:
 - It's cleanly formatted, clear, and easy to read and understand
@@ -271,6 +303,7 @@ Output natural, helpful markdown that:
 - Gives specific text to add/change with locations
 - Focuses on what real ATS systems filter on, not generic advice
 - Includes realistic assessment of chances
+- Includes verbatim citations under each relevant bullet using blockquotes beginning with "From job:" followed by the exact quote
 
 Be honest about what matters and what doesn't. For example, "polished" or "innovative" are unlikely ATS filters, while "Figma" or "Python" definitely are.
 
@@ -293,6 +326,7 @@ MARKDOWN FORMATTING REQUIREMENTS:
 - Use --- for section separators if needed
 - Keep paragraphs concise - prefer short paragraphs over walls of text
 - Use tables with | pipes | for | comparisons when appropriate
+ - For each evidence quote, use a single-line blockquote beginning with "From job:" and, optionally, a bracketed section label, e.g., > From job [Requirements]: "..."
 
 END OF RESPONSE CONSTRAINT:
 - Conclude after the Compatibility Assessment section. Do not add closing lines, offers, next steps, or any further assistance.
@@ -323,6 +357,12 @@ FIRST: Calculate an overall compatibility score from 0-100 based on keyword matc
      * MUST include impact and suggestion for each notFound keyword
    - Include exact counts and constructive suggestions
 
+   EVIDENCE REQUIREMENTS:
+   - For each underRepresented and notFound keyword, include an \"evidence\" array with 1-2 items.
+     Each item must be an object: { source: 'job', quote: '<verbatim text from job posting>', section: '<section name if known>' }.
+   - Quotes MUST be exact substrings of the JOB POSTING text above (no paraphrasing), and kept short (<= 180 characters).
+   - You may optionally include resume-based evidence with source: 'resume' where helpful.
+
 2. SUGGESTIONS - Specific improvements to consider:
    - Type: 'add' (new content), 'enhance' (strengthen existing), or 'rewrite' (revise section)
    - Location: Specific section in resume
@@ -330,6 +370,7 @@ FIRST: Calculate an overall compatibility score from 0-100 based on keyword matc
    - Suggested text with exact wording
    - Impact: estimated point improvement
    - Rationale: why this change would help
+   - Evidence: an array of 1-2 verbatim job pullquotes that justify the suggestion, using the same evidence object format as above
 
 3. ANALYSIS - Overall assessment:
    - topPriorities: What the role emphasizes most (based on repetition/placement)
@@ -434,19 +475,22 @@ function render(score: Score, type: 'json' | 'xml' | 'markdown' = 'json'): strin
 ### ✅ Strong Matches
 ${keywordAnalysis.strongMatches.length > 0 ?
           keywordAnalysis.strongMatches.map(k =>
-            `**${k.keyword}** - You: ${k.resumeFrequency}x | Job: ${k.jobFrequency}x`
+            `**${k.keyword}** - You: ${k.resumeFrequency}x | Job: ${k.jobFrequency}x` +
+            (k.evidence && k.evidence.length ? `\nEvidence:\n${k.evidence.map(e => `> From ${e.source}${e.section ? ` [${e.section}]` : ''}: "${e.quote}"`).join('\n')}` : '')
           ).join('\n') : 'No strong keyword matches identified'}
 
 ### ⚠️ Under-represented Keywords
 ${keywordAnalysis.underRepresented.length > 0 ?
           keywordAnalysis.underRepresented.map(k =>
-            `**${k.keyword}** - You: ${k.resumeFrequency}x | Job: ${k.jobFrequency}x\n→ Consider: ${k.suggestion}`
+            `**${k.keyword}** - You: ${k.resumeFrequency}x | Job: ${k.jobFrequency}x\n→ Consider: ${k.suggestion}` +
+            (k.evidence && k.evidence.length ? `\nEvidence:\n${k.evidence.map(e => `> From ${e.source}${e.section ? ` [${e.section}]` : ''}: "${e.quote}"`).join('\n')}` : '')
           ).join('\n\n') : 'All present keywords are well-represented'}
 
 ### ❌ Keywords Not Found
 ${keywordAnalysis.notFound.length > 0 ?
           keywordAnalysis.notFound.map(k =>
-            `**${k.keyword}** - Job mentions: ${k.jobFrequency}x\n→ Consider: ${k.suggestion}`
+            `**${k.keyword}** - Job mentions: ${k.jobFrequency}x\n→ Consider: ${k.suggestion}` +
+            (k.evidence && k.evidence.length ? `\nEvidence:\n${k.evidence.map(e => `> From ${e.source}${e.section ? ` [${e.section}]` : ''}: "${e.quote}"`).join('\n')}` : '')
           ).join('\n\n') : 'No critical keywords missing'}
 
 ## Optimization Opportunities
@@ -457,7 +501,8 @@ ${suggestions.map((s, i) => {
             const suggested = `**Consider:** "${s.suggested}"`
             const impact = `**Potential Impact:** +${s.impact} points`
             const rationale = `**Rationale:** ${s.rationale}`
-            return [header, current, suggested, impact, rationale].filter(Boolean).join('\n')
+            const evidence = s.evidence && s.evidence.length ? `Evidence:\n${s.evidence.map(e => `> From ${e.source}${e.section ? ` [${e.section}]` : ''}: "${e.quote}"`).join('\n')}` : ''
+            return [header, current, suggested, impact, rationale, evidence].filter(Boolean).join('\n')
           }).join('\n\n')}
 
 ## Role Analysis
